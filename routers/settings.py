@@ -23,11 +23,16 @@ async def settings_page(request: Request):
     ).fetchall()
     conn.close()
 
+    # Check effective AI config (Settings + env fallback)
+    from services.ai_client import get_ai_provider
+    effective_ai = get_ai_provider()
+
     return _render(request, "settings.html",
         tab="settings",
-        ai_provider=get_setting("ai_provider", "none"),
-        ai_api_key=_mask_key(get_setting("ai_api_key", "")),
-        has_ai_key=bool(get_setting("ai_api_key", "")),
+        ai_provider=get_setting("ai_provider", "") or effective_ai["provider"],
+        ai_api_key=_mask_key(get_setting("ai_api_key", "") or effective_ai["key"]),
+        has_ai_key=effective_ai["configured"],
+        ai_from_env=effective_ai["configured"] and not get_setting("ai_api_key", ""),
         currency=get_setting("home_currency", "USD"),
         scan_market=get_setting("scan_market_interval", "0"),
         scan_off=get_setting("scan_off_interval", "0"),

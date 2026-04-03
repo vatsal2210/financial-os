@@ -29,9 +29,15 @@
                        autocomplete="off">
             </div>
         </div>
-        <div class="notice notice-info" style="margin-top: 4px;">
-            Your API key is stored locally in ~/.financeos/finance.db. Queries send your portfolio data through the API for analysis — the data is not stored by the provider.
+        {% if ai_from_env %}
+        <div class="notice" style="margin-top: 4px; background: var(--green-subtle); border: 1px solid rgba(52,211,153,0.2); color: var(--green);">
+            Using API key from environment variable. You can override it above.
         </div>
+        {% else %}
+        <div class="notice notice-info" style="margin-top: 4px;">
+            Your API key is stored locally. Or set ANTHROPIC_API_KEY / OPENAI_API_KEY in your environment / .env file.
+        </div>
+        {% endif %}
         <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 12px;">Save AI Settings</button>
     </form>
 </div>

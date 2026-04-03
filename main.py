@@ -9,6 +9,15 @@ import argparse
 import webbrowser
 from pathlib import Path
 
+# Load .env from app dir or parent dirs
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    # Also check parent dir (personal-os/.env)
+    load_dotenv(Path(__file__).parent.parent / ".env")
+except ImportError:
+    pass
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
