@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Watchlist{% endblock %}
+
+{% block head %}
+<style>
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+        cursor: pointer;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: var(--border);
+        border-radius: 22px;
+        transition: background 0.2s;
+    }
+    .toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 3px;
+        bottom: 3px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+        background: var(--green);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(18px);
+        background: white;
+    }
+    .topic-card {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 16px;
+    }
+    .topic-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .topic-name {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    .topic-name.disabled {
+        opacity: 0.5;
+    }
+    .topic-keywords {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .keyword-tag {
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+    }
+    .topic-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .add-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        padding: 16px;
+        border-top: 1px solid var(--border);
+    }
+    .add-form .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .add-form label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .distance-positive { color: var(--green); }
+    .distance-negative { color: var(--red); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Watchlist</h1>
+    <p>Track symbols with price targets and topics of interest for scanning.</p>
+</div>
+
+<!-- Watchlist Table -->
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Watched Symbols</span>
+        <span class="card-title" style="font-weight: 400; font-size: 0.85rem; color: var(--text-secondary);">
+            {{ items|length }} symbol{{ "s" if items|length != 1 }}
+        </span>
+    </div>
+
+    {% if items %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>Target</th>
+                    <th>Distance</th>
+                    <th>Today</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td><span class="symbol-badge">{{ item.symbol }}</span></td>
+                    <td class="mono">
+                        {% if item.error %}
+                            <span style="color: var(--text-secondary);">--</span>
+                        {% else %}
+                            ${{ "{:,.2f}".format(item.current_price) }}
+                        {% endif %}
+                    </td>
+                    <td class="mono">
+                        {% if item.target_price %}
+                            ${{ "{:,.2f}".format(item.target_price) }}
+                        {% else %}
+                            <span style="color: var(--text-secondary);">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono">
+                        {% if item.distance_pct is not none %}
+                            <span class="{% if item.distance_pct > 0 %}distance-positive{% else %}distance-negative{% endif %}">
+                                {{ "+" if item.distance_pct > 0 }}{{ item.distance_pct }}%
+                            </span>
+                        {% else %}
+                            <span style="color: var(--text-secondary);">--</span>
+                        {% endif %}
+                    </td>
+                    <td class="mono {% if item.change_pct >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if item.change_pct >= 0 }}{{ item.change_pct }}%
+                    </td>
+                    <td>{{ item.notes }}</td>
+                    <td>
+                        <form method="POST" action="/watchlist/remove" style="margin: 0;">
+                            <input type="hidden" name="id" value="{{ item.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px;">
+        <h3>No symbols on watchlist</h3>
+        <p>Add symbols below to track their prices and set targets.</p>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/watchlist/add" class="add-form">
+        <div class="form-group">
+            <label>Symbol</label>
+            <input type="text" name="symbol" placeholder="AAPL" required
+                   style="width: 100px; text-transform: uppercase;">
+        </div>
+        <div class="form-group">
+            <label>Target Price</label>
+            <input type="number" name="target_price" placeholder="0.00"
+                   step="0.01" min="0" style="width: 120px;">
+        </div>
+        <div class="form-group">
+            <label>Notes</label>
+            <input type="text" name="notes" placeholder="Reason for watching..."
+                   style="min-width: 200px;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add Symbol</button>
+    </form>
+</div>
+
+<!-- Topics of Interest -->
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Topics of Interest</span>
+        <span class="card-title" style="font-weight: 400; font-size: 0.85rem; color: var(--text-secondary);">
+            {{ topics|length }} topic{{ "s" if topics|length != 1 }}
+        </span>
+    </div>
+
+    {% if topics %}
+    <div class="grid-2" style="padding: 16px; gap: 12px;">
+        {% for topic in topics %}
+        <div class="card topic-card">
+            <div class="topic-header">
+                <span class="topic-name {% if not topic.enabled %}disabled{% endif %}">
+                    {{ topic.name }}
+                </span>
+                <div class="topic-actions">
+                    <form method="POST" action="/topics/toggle" style="margin: 0;">
+                        <input type="hidden" name="id" value="{{ topic.id }}">
+                        <label class="toggle-switch">
+                            <input type="checkbox" {% if topic.enabled %}checked{% endif %}
+                                   onchange="this.form.submit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </form>
+                    <form method="POST" action="/topics/remove" style="margin: 0;">
+                        <input type="hidden" name="id" value="{{ topic.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% if topic.keywords %}
+            <div class="topic-keywords">
+                {% for kw in topic.keywords %}
+                <span class="keyword-tag">{{ kw }}</span>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px;">
+        <h3>No topics yet</h3>
+        <p>Add topics to track news and market themes you care about.</p>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/topics/add" class="add-form">
+        <div class="form-group">
+            <label>Topic Name</label>
+            <input type="text" name="name" placeholder="AI Infrastructure" required
+                   style="min-width: 180px;">
+        </div>
+        <div class="form-group">
+            <label>Keywords (comma-separated)</label>
+            <input type="text" name="keywords" placeholder="nvidia, data center, gpu"
+                   style="min-width: 280px;">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add Topic</button>
+    </form>
+</div>
+{% endblock %}

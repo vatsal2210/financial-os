@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Feed{% endblock %}
+
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+        <h1>Feed</h1>
+        <p>Live prices for your holdings and watchlist. Last scan: {{ last_scan }}</p>
+    </div>
+    <form method="POST" action="/feed/refresh" style="margin: 0;">
+        <button type="submit" class="btn btn-primary btn-sm">Refresh Now</button>
+    </form>
+</div>
+
+{% if scan_market == '0' and scan_off == '0' %}
+<div class="notice notice-warning" style="margin-bottom: 20px;">
+    Auto-scan is off. <a href="/settings" style="color: var(--yellow); text-decoration: underline;">Set a schedule in Settings</a> or click Refresh Now.
+</div>
+{% endif %}
+
+<!-- Movers -->
+{% if movers %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Today's Movers</span>
+            <span style="font-size: 12px; color: var(--text-muted);">{{ movers | length }} symbols tracked</span>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Price</th>
+                        <th>Change</th>
+                        <th>Source</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in movers %}
+                    <tr>
+                        <td><span class="symbol-badge">{{ m.symbol }}</span></td>
+                        <td class="mono">${{ "{:,.2f}".format(m.price) }}</td>
+                        <td class="mono {% if m.change_pct >= 0 %}positive{% else %}negative{% endif %}" style="font-weight: 600;">
+                            {{ "+" if m.change_pct >= 0 }}{{ m.change_pct }}%
+                        </td>
+                        <td>
+                            {% if m.held %}<span class="type-badge type-buy">held</span>{% endif %}
+                            {% if m.watched %}<span class="type-badge type-transfer">watchlist</span>{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card section" style="text-align: center; padding: 48px 20px;">
+    <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text-secondary);">No symbols to track</h3>
+    <p style="color: var(--text-muted); margin-bottom: 20px;">Import your brokerage transactions or add symbols to your watchlist to see live prices here.</p>
+    <div style="display: flex; gap: 12px; justify-content: center;">
+        <a href="/import" class="btn btn-primary">Import Data</a>
+        <a href="/watchlist" class="btn btn-secondary">Add to Watchlist</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Topics -->
+{% if topics %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Tracking Topics</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 4px;">
+            {% for t in topics %}
+            <div style="background: rgba(255,255,255,0.06); border: 1px solid var(--border-light); padding: 6px 14px; border-radius: 20px; font-size: 13px; color: var(--text-primary);">
+                {{ t.name }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Feed History -->
+{% if feed_entries %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Recent Activity</span>
+        </div>
+        {% for entry in feed_entries %}
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 14px; align-items: flex-start;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+                        background: {% if entry.type == 'mover' %}var(--blue){% elif entry.type == 'alert' %}var(--red){% else %}var(--text-muted){% endif %};"></div>
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        {% if entry.symbol %}<span class="symbol-badge" style="margin-right: 8px;">{{ entry.symbol }}</span>{% endif %}
+                        <span style="font-weight: 500;">{{ entry.title }}</span>
+                    </div>
+                    <span style="color: var(--text-muted); font-size: 12px; font-family: var(--font-mono);">{{ entry.created_at }}</span>
+                </div>
+                {% if entry.detail %}
+                <div style="color: var(--text-secondary); font-size: 13px; margin-top: 4px;">{{ entry.detail }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Scan Info -->
+<div class="card" style="margin-top: 20px;">
+    <div style="padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="color: var(--text-muted); font-size: 12px;">
+            Market hours: {{ "every " + scan_market + " min" if scan_market != '0' else "off" }} |
+            Off hours: {{ "every " + scan_off + " min" if scan_off != '0' else "off" }} |
+            Tracking {{ held_symbols | length }} held + {{ watchlist_symbols | length }} watched
+        </div>
+        <a href="/settings" style="color: var(--text-secondary); font-size: 12px; text-decoration: none;">Configure</a>
+    </div>
+</div>
+{% endblock %}

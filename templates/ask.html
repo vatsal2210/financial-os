@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Ask AI{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Ask AI</h1>
+    <p>Ask questions about your portfolio in plain English. Powered by your own API key.</p>
+</div>
+
+{% if not ai_configured %}
+<div class="notice notice-warning">
+    No AI provider configured. <a href="/settings" style="color: var(--yellow); text-decoration: underline;">Set up your API key in Settings</a> to use this feature.
+</div>
+{% endif %}
+
+<div class="chat-container">
+    {% if history %}
+    {% for msg in history %}
+    <div class="chat-message {{ msg.role }}">
+        {{ msg.content }}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div style="color: var(--text-muted); padding: 40px 0; text-align: center;">
+        <p style="font-size: 16px; margin-bottom: 12px;">Ask anything about your finances</p>
+        <p style="font-size: 13px;">Try: "What's my best performing stock?" or "How much did I spend on fees?"</p>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/ask" class="chat-input-wrap">
+        <input type="text" name="question" placeholder="Ask about your portfolio..."
+               autofocus {% if not ai_configured %}disabled{% endif %}>
+        <button type="submit" class="btn btn-primary" {% if not ai_configured %}disabled{% endif %}>Ask</button>
+    </form>
+</div>
+{% endblock %}

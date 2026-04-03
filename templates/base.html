@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Finance OS{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/icon_32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icon_192.png">
+    <link rel="apple-touch-icon" href="/static/icon_180.png">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="sidebar">
+        <div class="logo">
+            <img src="/static/icon_32.png" alt="Finance OS" class="logo-icon" style="border-radius: 6px;">
+            <span class="logo-text">Finance OS</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link {% if tab == 'overview' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                Overview
+            </a>
+            <a href="/holdings" class="nav-link {% if tab == 'holdings' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Holdings
+            </a>
+            <a href="/transactions" class="nav-link {% if tab == 'transactions' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                Transactions
+            </a>
+            <a href="/watchlist" class="nav-link {% if tab == 'watchlist' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Watchlist
+            </a>
+            <a href="/feed" class="nav-link {% if tab == 'feed' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+                Feed
+            </a>
+            <a href="/import" class="nav-link {% if tab == 'import' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import
+            </a>
+            <a href="/settings" class="nav-link {% if tab == 'settings' %}active{% endif %}">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                Settings
+            </a>
+        </div>
+        <div class="nav-footer">
+            <!-- AI Chat toggle -->
+            <button class="ai-toggle-btn" onclick="toggleAIPanel()" id="ai-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                Ask AI
+            </button>
+            <div class="local-badge">100% Local</div>
+        </div>
+    </nav>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- AI Chat Side Panel -->
+    <aside class="ai-panel" id="ai-panel">
+        <div class="ai-panel-header">
+            <span style="font-weight: 600; font-size: 14px;">Ask AI</span>
+            <button onclick="toggleAIPanel()" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size: 18px; padding: 4px;">&times;</button>
+        </div>
+        <div class="ai-panel-messages" id="ai-messages">
+            <div class="ai-placeholder">
+                <p>Ask anything about your portfolio.</p>
+                <p class="ai-examples">
+                    "What's my best performer?"<br>
+                    "How much in dividends?"<br>
+                    "Show my sector allocation"
+                </p>
+            </div>
+        </div>
+        <form class="ai-panel-input" onsubmit="return sendAIMessage(event)">
+            <input type="text" id="ai-input" placeholder="Ask about your finances..." autocomplete="off">
+            <button type="submit" class="btn btn-primary btn-sm" style="flex-shrink:0;">Send</button>
+        </form>
+    </aside>
+
+    <script src="/static/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

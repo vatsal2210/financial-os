@@ -1,0 +1,225 @@
+{% if step == 'welcome' or step == 'account' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance OS — Setup</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body style="justify-content: center; background: var(--bg-primary);">
+    <div class="onboarding-container">
+        {% if step == 'welcome' %}
+        <div class="onboarding-step">
+            <h1>Welcome to Finance OS</h1>
+            <p>Your money data stays on your machine. Always. Let's import your brokerage activity to get started.</p>
+        </div>
+
+        <form method="POST" action="/onboarding/account" id="onboarding-form">
+            <input type="hidden" name="brokerage" id="brokerage-input" value="">
+
+            <div class="form-group">
+                <label>Select your brokerage</label>
+                <div class="brokerage-grid">
+                    {% for key, preset in brokerages.items() %}
+                    <div class="brokerage-option" data-brokerage="{{ key }}"
+                         data-currency="{{ preset.currency }}"
+                         data-types='{{ preset.account_types | tojson }}'>
+                        <div class="name">{{ preset.name }}</div>
+                        <div class="country">{{ preset.country }}</div>
+                    </div>
+                    {% endfor %}
+                    <div class="brokerage-option" data-brokerage="generic"
+                         data-currency="USD"
+                         data-types='["Individual", "Joint", "IRA", "401k", "TFSA", "RRSP", "Other"]'>
+                        <div class="name">Other</div>
+                        <div class="country">Any CSV</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="account-name">Give this account a name</label>
+                <input type="text" name="account_name" id="account-name"
+                       placeholder="e.g. My Trading Account" required>
+            </div>
+
+            <input type="hidden" name="account_type" id="account-type-input" value="Individual">
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                Continue
+            </button>
+        </form>
+
+        <script>
+        // Auto-set account name from brokerage selection
+        document.querySelectorAll('.brokerage-option').forEach(el => {
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.brokerage-option').forEach(o => o.classList.remove('selected'));
+                el.classList.add('selected');
+                document.getElementById('brokerage-input').value = el.dataset.brokerage;
+                // Auto-fill account name if empty
+                const nameInput = document.getElementById('account-name');
+                if (!nameInput.value) {
+                    const name = el.querySelector('.name').textContent;
+                    nameInput.value = name === 'Other' ? 'My Account' : name;
+                }
+                // Default account type from brokerage
+                const types = JSON.parse(el.dataset.types || '["Individual"]');
+                document.getElementById('account-type-input').value = types[0];
+            });
+        });
+        </script>
+
+        {% endif %}
+    </div>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+
+{% elif step == 'upload' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance OS — Import Data</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body style="justify-content: center;">
+    <div class="onboarding-container">
+        <div class="onboarding-step">
+            <h1>Upload your data</h1>
+            <p>Export your transaction history as CSV from {{ brokerage_name }} and upload it here.</p>
+        </div>
+
+        <form method="POST" action="/import/preview" enctype="multipart/form-data">
+            <input type="hidden" name="account_id" value="{{ account_id }}">
+            <input type="hidden" name="brokerage" value="{{ brokerage }}">
+
+            <div class="upload-area" id="upload-area">
+                <div class="upload-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <p><strong>Drop your CSV here</strong> or click to browse</p>
+                <p id="file-name" style="margin-top: 8px; font-size: 13px;">No file selected</p>
+                <input type="file" name="file" id="file-input" accept=".csv" required>
+            </div>
+
+            {% if sample_hint %}
+            <div class="notice notice-info" style="margin-bottom: 16px;">
+                Testing? Try a sample file from <code>app/samples/{{ brokerage }}/</code>
+            </div>
+            {% endif %}
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                Preview Import
+            </button>
+        </form>
+    </div>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+
+{% elif step == 'preview' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance OS — Review Import</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body style="justify-content: center;">
+    <div class="onboarding-container" style="max-width: 900px;">
+        <div class="onboarding-step">
+            <h1>Review your data</h1>
+            <p>We found <strong>{{ total_count }}</strong> transactions. Here's a preview:</p>
+        </div>
+
+        <div class="card preview-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Symbol</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tx in transactions %}
+                    <tr>
+                        <td class="mono">{{ tx.date }}</td>
+                        <td><span class="type-badge type-{{ tx.type }}">{{ tx.type }}</span></td>
+                        <td>{% if tx.symbol %}<span class="symbol-badge">{{ tx.symbol }}</span>{% endif %}</td>
+                        <td class="mono">{{ "%.2f"|format(tx.quantity) if tx.quantity else '' }}</td>
+                        <td class="mono">{{ "$%.2f"|format(tx.price) if tx.price else '' }}</td>
+                        <td class="mono">{{ "$%.2f"|format(tx.amount) if tx.amount else '' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if total_count > 20 %}
+            <p style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 13px;">
+                Showing 20 of {{ total_count }} transactions
+            </p>
+            {% endif %}
+        </div>
+
+        <form method="POST" action="/import/confirm" style="margin-top: 20px;">
+            <input type="hidden" name="account_id" value="{{ account_id }}">
+            <input type="hidden" name="brokerage" value="{{ brokerage }}">
+            <input type="hidden" name="filename" value="{{ filename }}">
+            <input type="hidden" name="import_batch" value="{{ import_batch }}">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                Import {{ total_count }} Transactions
+            </button>
+        </form>
+    </div>
+</body>
+</html>
+
+{% elif step == 'done' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance OS — Ready!</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+</head>
+<body style="justify-content: center;">
+    <div class="onboarding-container">
+        <div class="success-state">
+            <div class="check">&#10003;</div>
+            <h1>You're all set!</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 8px;">
+                Imported <strong>{{ rows_imported }}</strong> transactions from {{ filename }}.
+            </p>
+            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 32px;">
+                All data is stored locally on your machine. Nothing was sent anywhere.
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <a href="/" class="btn btn-primary">
+                    Go to Dashboard
+                </a>
+                <a href="/xray" class="btn btn-secondary">
+                    Run Portfolio X-Ray
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+{% endif %}

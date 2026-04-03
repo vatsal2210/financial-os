@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Portfolio X-Ray{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Portfolio X-Ray</h1>
+    <p>Instant health check across concentration, risk, discipline, and returns.</p>
+</div>
+
+<!-- Overall Grade -->
+<div class="stats-grid" style="margin-bottom: 32px;">
+    <div class="stat-card" style="text-align: center; border-color: {% if overall == 'A' %}var(--green){% elif overall == 'B' %}var(--blue){% elif overall == 'C' %}var(--yellow){% else %}var(--red){% endif %};">
+        <div class="stat-label">Overall Grade</div>
+        <div class="stat-value" style="font-size: 56px; color: {% if overall == 'A' %}var(--green){% elif overall == 'B' %}var(--blue){% elif overall == 'C' %}var(--yellow){% else %}var(--red){% endif %};">
+            {{ overall }}
+        </div>
+    </div>
+    {% for name, grade in grades.items() %}
+    <div class="stat-card" style="text-align: center;">
+        <div class="stat-label">{{ name | title }}</div>
+        <div class="stat-value" style="font-size: 36px; color: {% if grade == 'A' %}var(--green){% elif grade == 'B' %}var(--blue){% elif grade == 'C' %}var(--yellow){% elif grade == 'D' %}var(--red){% else %}var(--text-muted){% endif %};">
+            {{ grade }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Alerts -->
+{% if alerts %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Alerts</span>
+            <span style="font-size: 12px; color: var(--text-muted);">{{ alerts | length }} issue{{ "s" if alerts | length != 1 }}</span>
+        </div>
+        {% for alert in alerts %}
+        <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 14px; align-items: flex-start;">
+            <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+                        background: {% if alert.severity == 'high' %}var(--red){% elif alert.severity == 'medium' %}var(--yellow){% else %}var(--blue){% endif %};"></div>
+            <div>
+                <div style="font-weight: 600; font-size: 14px; margin-bottom: 4px;">{{ alert.title }}</div>
+                <div style="color: var(--text-secondary); font-size: 13px;">{{ alert.detail }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Insights -->
+{% if insights %}
+<div class="section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Insights</span>
+        </div>
+        <div style="padding: 4px 16px 16px;">
+            {% for insight in insights %}
+            <div style="padding: 8px 0; color: var(--text-secondary); font-size: 14px; border-bottom: 1px solid var(--border);">
+                {{ insight }}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Portfolio Snapshot -->
+<div class="grid-2 section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Snapshot</span>
+        </div>
+        <table>
+            <tbody>
+                <tr>
+                    <td style="color: var(--text-secondary);">Total Value</td>
+                    <td class="mono" style="text-align: right;">${{ "{:,.2f}".format(summary.total_value) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-secondary);">Cost Basis</td>
+                    <td class="mono" style="text-align: right;">${{ "{:,.2f}".format(summary.total_cost_basis) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-secondary);">Unrealized P&L</td>
+                    <td class="mono {% if summary.unrealized_pnl >= 0 %}positive{% else %}negative{% endif %}" style="text-align: right;">
+                        {{ "+" if summary.unrealized_pnl >= 0 }}${{ "{:,.2f}".format(summary.unrealized_pnl) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-secondary);">Realized P&L</td>
+                    <td class="mono {% if summary.realized_pnl >= 0 %}positive{% else %}negative{% endif %}" style="text-align: right;">
+                        {{ "+" if summary.realized_pnl >= 0 }}${{ "{:,.2f}".format(summary.realized_pnl) }}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-secondary);">Dividends</td>
+                    <td class="mono positive" style="text-align: right;">${{ "{:,.2f}".format(summary.dividends) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: var(--text-secondary);">Positions</td>
+                    <td class="mono" style="text-align: right;">{{ summary.num_positions }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Allocation</span>
+        </div>
+        <div class="allocation-bars">
+            {% for a in allocation[:10] %}
+            <div class="alloc-row">
+                <span class="alloc-symbol">{{ a.symbol }}</span>
+                <div class="alloc-bar-wrap">
+                    <div class="alloc-bar" style="width: {{ a.pct }}%"></div>
+                </div>
+                <span class="alloc-pct">{{ a.pct }}%</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Holdings Detail -->
+{% if summary.holdings %}
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">All Positions</span>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Value</th>
+                    <th>Weight</th>
+                    <th>P&L</th>
+                    <th>P&L %</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in summary.holdings %}
+                <tr>
+                    <td><span class="symbol-badge">{{ h.symbol }}</span></td>
+                    <td class="mono">${{ "{:,.2f}".format(h.market_value) }}</td>
+                    <td class="mono">{{ "{:.1f}".format(h.market_value / summary.total_value * 100 if summary.total_value > 0 else 0) }}%</td>
+                    <td class="mono {% if h.unrealized_pnl >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.unrealized_pnl >= 0 }}${{ "{:,.2f}".format(h.unrealized_pnl) }}
+                    </td>
+                    <td class="mono {% if h.unrealized_pct >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.unrealized_pct >= 0 }}{{ h.unrealized_pct }}%
+                    </td>
+                    <td>
+                        {% if h.unrealized_pct > 15 %}
+                        <span class="type-badge type-buy">winner</span>
+                        {% elif h.unrealized_pct < -20 %}
+                        <span class="type-badge type-sell">cut loss</span>
+                        {% elif h.unrealized_pct < -10 %}
+                        <span class="type-badge type-fee">watch</span>
+                        {% elif h.market_value < 300 %}
+                        <span class="type-badge type-other">too small</span>
+                        {% else %}
+                        <span class="type-badge type-transfer">hold</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div style="text-align: center; margin-top: 20px;">
+    <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+</div>
+{% endblock %}

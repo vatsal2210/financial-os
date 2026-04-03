@@ -1,0 +1,21 @@
+Activity Date,Trans Code,Instrument,Description,Quantity,Price,Amount
+12/15/2024,ACH,,Deposit - Transfer from Bank,0,0,10000.00
+12/16/2024,Buy,AAPL,Apple Inc - Purchase,25,192.50,-4812.50
+12/16/2024,Buy,NVDA,NVIDIA Corporation - Purchase,10,495.00,-4950.00
+12/20/2024,Buy,MSFT,Microsoft Corp - Purchase,5,374.20,-1871.00
+01/02/2025,Buy,TSLA,Tesla Inc - Purchase,8,252.30,-2018.40
+01/10/2025,CDIV,AAPL,Apple Inc - Dividend,0,0,6.00
+01/15/2025,ACH,,Deposit - Transfer from Bank,0,0,5000.00
+01/20/2025,Sell,NVDA,NVIDIA Corporation - Sale,5,530.00,2650.00
+01/25/2025,Buy,AMZN,Amazon.com Inc - Purchase,8,225.10,-1800.80
+02/01/2025,Buy,GOOGL,Alphabet Inc - Purchase,10,178.50,-1785.00
+02/10/2025,CDIV,MSFT,Microsoft Corp - Dividend,0,0,3.75
+02/14/2025,Sell,TSLA,Tesla Inc - Sale,4,285.00,1140.00
+02/20/2025,Buy,META,Meta Platforms Inc - Purchase,4,628.50,-2514.00
+03/01/2025,CDIV,AAPL,Apple Inc - Dividend,0,0,6.25
+03/05/2025,Sell,AAPL,Apple Inc - Sale,10,198.00,1980.00
+03/10/2025,Buy,AMD,Advanced Micro Devices - Purchase,15,165.00,-2475.00
+03/15/2025,ACH,,Deposit - Transfer from Bank,0,0,3000.00
+03/20/2025,Sell,NVDA,NVIDIA Corporation - Sale,3,545.00,1635.00
+03/25/2025,Buy,PLTR,Palantir Technologies - Purchase,40,24.50,-980.00
+03/28/2025,Fee,,Robinhood Gold Subscription,0,0,-5.00

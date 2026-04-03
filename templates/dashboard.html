@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Dashboard{% endblock %}
+
+{% block content %}
+{% if tab == 'overview' %}
+<div class="page-header">
+    <h1>Portfolio Overview</h1>
+    <p>All data local. All amounts in {{ summary.holdings[0].currency if summary.holdings else 'USD' }}.</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Total Value</div>
+        <div class="stat-value">${{ "{:,.2f}".format(summary.total_value) }}</div>
+        <div class="stat-sub">{{ summary.num_positions }} positions</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Total Return</div>
+        <div class="stat-value {% if summary.total_return >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "+" if summary.total_return >= 0 }}${{ "{:,.2f}".format(summary.total_return) }}
+        </div>
+        <div class="stat-sub neutral">Net deposits: ${{ "{:,.2f}".format(summary.net_deposits) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Unrealized P&L</div>
+        <div class="stat-value {% if summary.unrealized_pnl >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "+" if summary.unrealized_pnl >= 0 }}${{ "{:,.2f}".format(summary.unrealized_pnl) }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Realized P&L</div>
+        <div class="stat-value {% if summary.realized_pnl >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "+" if summary.realized_pnl >= 0 }}${{ "{:,.2f}".format(summary.realized_pnl) }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Dividends</div>
+        <div class="stat-value positive">${{ "{:,.2f}".format(summary.dividends) }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Transactions</div>
+        <div class="stat-value">{{ summary.num_transactions }}</div>
+        <div class="stat-sub neutral">{{ summary.num_accounts }} account{{ "s" if summary.num_accounts != 1 }}</div>
+    </div>
+</div>
+
+{% if allocation %}
+<div class="grid-2 section">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Allocation</span>
+        </div>
+        <div class="allocation-bars">
+            {% for a in allocation[:15] %}
+            <div class="alloc-row">
+                <span class="alloc-symbol">{{ a.symbol }}</span>
+                <div class="alloc-bar-wrap">
+                    <div class="alloc-bar" style="width: {{ a.pct }}%"></div>
+                </div>
+                <span class="alloc-pct">{{ a.pct }}%</span>
+                <span class="alloc-value">${{ "{:,.0f}".format(a.value) }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Top Movers Today</span>
+        </div>
+        <table>
+            <thead>
+                <tr><th>Symbol</th><th>Price</th><th>Change</th></tr>
+            </thead>
+            <tbody>
+                {% for h in summary.holdings[:10] %}
+                <tr>
+                    <td><span class="symbol-badge">{{ h.symbol }}</span></td>
+                    <td class="mono">${{ "{:,.2f}".format(h.current_price) }}</td>
+                    <td class="mono {% if h.change_pct >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.change_pct >= 0 }}{{ h.change_pct }}%
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No holdings yet</h3>
+    <p>Import your brokerage data to see your portfolio.</p>
+    <a href="/import" class="btn btn-primary" style="margin-top: 16px;">Import Data</a>
+</div>
+{% endif %}
+
+{% elif tab == 'holdings' %}
+<div class="page-header">
+    <h1>Holdings</h1>
+    <p>Current positions calculated from your transaction history.</p>
+</div>
+
+<div class="filters">
+    <form method="GET" action="/holdings" style="display: flex; gap: 12px;">
+        <select name="account_id" class="auto-submit">
+            <option value="">All Accounts</option>
+            {% for a in accounts %}
+            <option value="{{ a.id }}" {% if selected_account == a.id %}selected{% endif %}>
+                {{ a.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+{% if holdings %}
+<div class="card">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Symbol</th>
+                    <th>Qty</th>
+                    <th>Avg Cost</th>
+                    <th>Price</th>
+                    <th>Market Value</th>
+                    <th>P&L</th>
+                    <th>P&L %</th>
+                    <th>Today</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in holdings %}
+                <tr>
+                    <td><span class="symbol-badge">{{ h.symbol }}</span></td>
+                    <td class="mono">{{ "{:,.4f}".format(h.quantity) }}</td>
+                    <td class="mono">${{ "{:,.2f}".format(h.avg_cost) }}</td>
+                    <td class="mono">${{ "{:,.2f}".format(h.current_price) }}</td>
+                    <td class="mono">${{ "{:,.2f}".format(h.market_value) }}</td>
+                    <td class="mono {% if h.unrealized_pnl >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.unrealized_pnl >= 0 }}${{ "{:,.2f}".format(h.unrealized_pnl) }}
+                    </td>
+                    <td class="mono {% if h.unrealized_pct >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.unrealized_pct >= 0 }}{{ h.unrealized_pct }}%
+                    </td>
+                    <td class="mono {% if h.change_pct >= 0 %}positive{% else %}negative{% endif %}">
+                        {{ "+" if h.change_pct >= 0 }}{{ h.change_pct }}%
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% else %}
+<div class="empty-state">
+    <h3>No holdings found</h3>
+    <p>Import buy/sell transactions to see calculated positions.</p>
+</div>
+{% endif %}
+
+{% elif tab == 'transactions' %}
+<div class="page-header">
+    <h1>Transactions</h1>
+    <p>{{ total }} total transactions</p>
+</div>
+
+<form method="GET" action="/transactions" class="filters">
+    <select name="account_id" class="auto-submit">
+        <option value="">All Accounts</option>
+        {% for a in accounts %}
+        <option value="{{ a.id }}" {% if selected_account == a.id %}selected{% endif %}>
+            {{ a.name }}
+        </option>
+        {% endfor %}
+    </select>
+    <select name="type" class="auto-submit">
+        <option value="">All Types</option>
+        {% for t in types %}
+        <option value="{{ t }}" {% if selected_type == t %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+    </select>
+    <input type="text" name="symbol" value="{{ search_symbol }}"
+           placeholder="Search symbol..." style="min-width: 140px;">
+    <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+</form>
+
+{% if transactions %}
+<div class="card">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account</th>
+                    <th>Type</th>
+                    <th>Symbol</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr>
+                    <td class="mono">{{ tx.date }}</td>
+                    <td>{{ tx.account_name or '—' }}</td>
+                    <td><span class="type-badge type-{{ tx.type }}">{{ tx.type }}</span></td>
+                    <td>{% if tx.symbol %}<span class="symbol-badge">{{ tx.symbol }}</span>{% endif %}</td>
+                    <td class="mono">{{ "{:,.2f}".format(tx.quantity) if tx.quantity else '' }}</td>
+                    <td class="mono">{{ "${:,.2f}".format(tx.price) if tx.price else '' }}</td>
+                    <td class="mono {% if tx.amount and tx.amount > 0 %}positive{% elif tx.amount and tx.amount < 0 %}negative{% endif %}">
+                        {{ "${:,.2f}".format(tx.amount) if tx.amount else '' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/transactions?page={{ page - 1 }}{% if selected_account %}&account_id={{ selected_account }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if search_symbol %}&symbol={{ search_symbol }}{% endif %}">Prev</a>
+    {% endif %}
+    <span class="info">Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/transactions?page={{ page + 1 }}{% if selected_account %}&account_id={{ selected_account }}{% endif %}{% if selected_type %}&type={{ selected_type }}{% endif %}{% if search_symbol %}&symbol={{ search_symbol }}{% endif %}">Next</a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <h3>No transactions found</h3>
+    <p>Try adjusting your filters or import more data.</p>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

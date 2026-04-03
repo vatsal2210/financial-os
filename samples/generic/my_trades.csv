@@ -1,0 +1,13 @@
+Date,Action,Ticker,Shares,Unit Price,Total,Notes
+2025-01-05,Deposit,,,,,Initial funding
+2025-01-06,Bought,SOFI,100,9.50,-950.00,Fintech play
+2025-01-10,Bought,COIN,15,265.00,-3975.00,Crypto exposure
+2025-01-15,Bought,SQ,20,78.50,-1570.00,Payments
+2025-01-20,Bought,ARKK,30,52.00,-1560.00,Innovation ETF
+2025-02-01,Dividend,SOFI,,,2.50,Q4 div
+2025-02-10,Sold,COIN,8,280.00,2240.00,Taking profits
+2025-02-15,Bought,HOOD,50,22.00,-1100.00,Robinhood stock
+2025-02-20,Sold,ARKK,15,48.00,720.00,Trimming
+2025-03-01,Bought,MSTR,5,310.00,-1550.00,Bitcoin proxy
+2025-03-10,Sold,SOFI,50,11.20,560.00,Partial sell
+2025-03-15,Bought,NU,80,14.50,-1160.00,Brazil fintech
