@@ -24,11 +24,9 @@ jobs:
           CURRENT=$(python3 -c "exec(open('version.py').read()); print(VERSION)")
           echo "Current version: ${CURRENT}"
 
-          # Check commit message for explicit version directives
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-
-          # Match [release:major] or [release:minor] — explicit, no false positives
-          FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+          # Only check the commit TITLE (first line) for version directives
+          FIRST_LINE=$(git log -1 --format=%s)
+          echo "Commit title: ${FIRST_LINE}"
 
           if echo "$FIRST_LINE" | grep -qF "[release:major]"; then
             MAJOR=$(echo $CURRENT | cut -d. -f1)
