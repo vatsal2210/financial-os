@@ -51,7 +51,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller pywebview
+          pip install pyinstaller pywebview Pillow
 
       - name: Build Windows exe
         run: python -m PyInstaller financeos-win.spec --noconfirm

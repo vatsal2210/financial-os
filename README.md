@@ -6,8 +6,8 @@
   <img src="static/icon_512.png" alt="Finance OS" width="128" height="128" style="border-radius: 24px;">
 </p>
 
-<p align="center">
-  <a href="https://github.com/vatsal2210/financial-os/releases/download/v0.2.0/Finance-OS-mac.dmg"><strong>Download for macOS</strong></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://github.com/vatsal2210/financial-os/releases/download/v0.2.0/Finance-OS-windows.zip"><strong>Download for Windows</strong></a>
+<p align="center" id="download-links">
+  <a href="https://github.com/vatsal2210/financial-os/releases/latest/download/Finance-OS-mac.dmg"><strong>Download for macOS</strong></a>&nbsp;&nbsp;·&nbsp;&nbsp;<a href="https://github.com/vatsal2210/financial-os/releases/latest/download/Finance-OS-windows.zip"><strong>Download for Windows</strong></a>
 </p>
 
 ---
