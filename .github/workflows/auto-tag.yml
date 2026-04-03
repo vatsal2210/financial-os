@@ -1,33 +1,86 @@
-name: Auto Tag on Version Bump
+name: Auto Version & Release
 
 on:
   push:
     branches: [main]
-    paths: [version.py]
 
 permissions:
   contents: write
 
 jobs:
-  tag:
+  version-and-tag:
+    # Skip if the push was from this workflow (prevent infinite loop)
+    if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read version and create tag
+      - name: Bump version and tag
         run: |
-          VERSION=$(python3 -c "exec(open('version.py').read()); print(VERSION)")
-          TAG="v${VERSION}"
+          # Read current version
+          CURRENT=$(python3 -c "exec(open('version.py').read()); print(VERSION)")
+          echo "Current version: ${CURRENT}"
 
+          # Check commit message for explicit version directives
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+
+          if echo "$COMMIT_MSG" | grep -qi "\[major\]"; then
+            # Major bump: 0.2.3 → 1.0.0
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            NEW="$((MAJOR + 1)).0.0"
+            echo "Major bump requested"
+          elif echo "$COMMIT_MSG" | grep -qi "\[minor\]"; then
+            # Minor bump: 0.2.3 → 0.3.0
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            MINOR=$(echo $CURRENT | cut -d. -f2)
+            NEW="${MAJOR}.$((MINOR + 1)).0"
+            echo "Minor bump requested"
+          else
+            # Default: patch bump: 0.2.3 → 0.2.4
+            MAJOR=$(echo $CURRENT | cut -d. -f1)
+            MINOR=$(echo $CURRENT | cut -d. -f2)
+            PATCH=$(echo $CURRENT | cut -d. -f3)
+            NEW="${MAJOR}.${MINOR}.$((PATCH + 1))"
+            echo "Patch bump (default)"
+          fi
+
+          TAG="v${NEW}"
+          TODAY=$(date +%Y.%m.%d)
+
+          echo "New version: ${NEW} (tag: ${TAG})"
+
+          # Check if tag already exists
           if git rev-parse "${TAG}" >/dev/null 2>&1; then
             echo "Tag ${TAG} already exists — skipping"
-          else
-            echo "Creating tag ${TAG}"
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git tag "${TAG}" -m "Release ${TAG}"
-            git push origin "${TAG}"
-            echo "Tag ${TAG} pushed — Build & Release workflow will trigger"
+            exit 0
           fi
+
+          # Update version.py
+          cat > version.py << EOF
+          """Finance OS version info."""
+          VERSION = "${NEW}"
+          BUILD = "${TODAY}"
+          EOF
+
+          # Fix indentation (heredoc adds spaces)
+          python3 -c "
+          lines = open('version.py').readlines()
+          with open('version.py', 'w') as f:
+              for line in lines:
+                  f.write(line.lstrip())
+          "
+
+          # Commit version bump
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add version.py
+          git commit -m "Bump version to ${NEW} [skip ci]"
+          git push origin main
+
+          # Create and push tag
+          git tag "${TAG}" -m "Release ${TAG}"
+          git push origin "${TAG}"
+          echo "Released ${TAG}"
