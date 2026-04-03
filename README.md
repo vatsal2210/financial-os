@@ -2,61 +2,66 @@
 
 **Local-first personal finance intelligence. Your data never leaves your machine.**
 
-## Quick Start
+## Download
 
-### macOS (App Bundle)
-Double-click `Finance OS.app` — that's it. Opens in your browser at localhost:3001.
+**[Download for macOS](https://github.com/vatsal2210/financial-os/releases/download/v0.2.0/Finance-OS-mac.dmg)** (48 MB)
 
-### macOS / Linux (Source)
-```bash
-bash install.sh
-```
-Then run: `~/.financeos-app/launch.sh` (or just `financeos` if symlink worked)
+Open the `.dmg`, drag Finance OS to Applications, done.
 
-### Windows (Source)
-```
-install.bat
-```
-Then run: `%USERPROFILE%\.financeos-app\FinanceOS.bat`
+Windows — coming soon.
 
-### Manual (Any OS)
-```bash
-python3 -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python main.py
-```
+---
 
-## What It Does
+## Import once. See everything.
 
-- **Import** your brokerage CSV (Robinhood, Fidelity, Schwab, Wealthsimple, Interactive Brokers, or any CSV)
-- **Dashboard** with live prices, P&L, allocation breakdown
-- **Holdings** calculated from your transaction history (FIFO cost basis)
-- **Watchlist** with target prices and topics of interest
-- **Feed** with live price tracking for held + watched symbols
+Export a CSV from your brokerage. Finance OS parses it, calculates FIFO cost basis, and builds your entire portfolio view automatically.
+
+**Supported brokerages:**
+
+| Brokerage | Country |
+|-----------|---------|
+| Wealthsimple | Canada |
+| Robinhood | USA |
+| Fidelity | USA |
+| Charles Schwab | USA |
+| Interactive Brokers | Global |
+| Generic CSV | Any |
+
+---
+
+## Features
+
+- **Portfolio Dashboard** — total value, P&L, allocation, top movers with live prices
+- **Holdings** — every position with cost basis, unrealized gains, and daily change
+- **Transactions** — searchable history with filters by account, type, and symbol
+- **Watchlist** — track symbols with price targets and topics of interest
+- **Feed** — live price movers for everything you hold or watch
+- **Finances** — income sources, expense tracking, monthly cashflow and savings rate
+- **Tax** — full Canada and USA tax support with optimization checklists
+- **Trading Rules** — configurable limits with live compliance scoring
+- **Portfolio X-Ray** — instant health grades across concentration, risk, and returns
 - **Ask AI** — natural language questions about your portfolio (bring your own Claude or OpenAI key)
-- **Portfolio X-Ray** — instant health check (concentration, risk, returns grading)
+
+---
 
 ## Your Data
 
-All data is stored locally at `~/.financeos/finance.db` (SQLite).
+All data stored locally at `~/.financeos/` on your machine.
 
 - No cloud. No accounts. No telemetry.
-- API keys (if you add one for AI features) are stored locally.
-- AI queries send portfolio context to your chosen provider — data is not stored by them.
+- AI queries use your own API key — nothing stored by the provider.
+- 100% offline except for live stock prices (Yahoo Finance, public).
 
-## Sample Data
+---
 
-Test with pre-made CSVs in `samples/`:
-- `samples/robinhood/activities.csv`
-- `samples/fidelity/activities.csv`
-- `samples/schwab/transactions.csv`
-- `samples/wealthsimple/activities.csv`
-- `samples/interactive_brokers/trades.csv`
-- `samples/generic/my_trades.csv`
+## Country Support
 
-## Tech
+Pick your country during setup. The entire system adapts:
 
-- Python + FastAPI + SQLite + Jinja2
-- Yahoo Finance for live prices (public, no auth)
-- 74 tests (`python -m pytest tests/ -v`)
+| | Canada | United States |
+|---|---|---|
+| Currency | CAD | USD |
+| Tax brackets | Federal + Provincial | Federal + State |
+| Accounts | TFSA, RRSP, FHSA, RESP | 401k, IRA, Roth, HSA |
+| Capital gains | 50% inclusion rate | Short-term vs long-term |
+| Optimization | RRSP room, FHSA, CESG, T2200 | Standard deduction, wash sale alerts |

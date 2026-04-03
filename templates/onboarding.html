@@ -9,71 +9,77 @@
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 <body style="justify-content: center; background: var(--bg-primary);">
-    <div class="onboarding-container">
+    <div class="onboarding-container" style="max-width: 560px;">
         {% if step == 'welcome' %}
+
+        <!-- Logo + Hero -->
         <div class="onboarding-step">
-            <div style="margin-bottom: 24px;">
-                <img src="/static/icon_64.png" alt="Finance OS" style="border-radius: 12px;">
+            <div style="margin-bottom: 20px;">
+                <img src="/static/icon_64.png" alt="Finance OS" style="border-radius: 14px;">
             </div>
-            <h1>Welcome to Finance OS</h1>
-            <p>Your money data stays on your machine. Always.</p>
+            <h1 style="font-size: 32px; letter-spacing: -0.5px;">Finance OS</h1>
+            <p style="font-size: 15px; line-height: 1.6; max-width: 420px; margin: 12px auto 0;">
+                Import once. See everything.<br>
+                <span style="color: var(--text-muted);">Your data stays on your machine. Always.</span>
+            </p>
         </div>
 
         <form method="POST" action="/onboarding/account" id="onboarding-form">
             <input type="hidden" name="brokerage" id="brokerage-input" value="">
             <input type="hidden" name="account_type" id="account-type-input" value="Individual">
+            <input type="hidden" name="country" id="country-input" value="">
 
-            <!-- Step 1: Country -->
-            <div class="form-group">
-                <label>Where are you based?</label>
-                <div class="brokerage-grid" style="grid-template-columns: 1fr 1fr;">
-                    <div class="brokerage-option" data-country="CA" onclick="selectCountry('CA')">
-                        <div style="font-size: 28px; margin-bottom: 4px;">🇨🇦</div>
-                        <div class="name">Canada</div>
-                        <div class="country">CAD · TFSA · RRSP · FHSA</div>
+            <!-- Country -->
+            <div class="form-group" style="margin-bottom: 20px;">
+                <div class="brokerage-grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="brokerage-option" data-country="CA" onclick="selectCountry('CA')" style="padding: 16px;">
+                        <div style="font-size: 24px;">🇨🇦</div>
+                        <div class="name" style="margin-top: 4px;">Canada</div>
                     </div>
-                    <div class="brokerage-option" data-country="US" onclick="selectCountry('US')">
-                        <div style="font-size: 28px; margin-bottom: 4px;">🇺🇸</div>
-                        <div class="name">United States</div>
-                        <div class="country">USD · 401k · IRA · Roth</div>
+                    <div class="brokerage-option" data-country="US" onclick="selectCountry('US')" style="padding: 16px;">
+                        <div style="font-size: 24px;">🇺🇸</div>
+                        <div class="name" style="margin-top: 4px;">United States</div>
                     </div>
                 </div>
             </div>
-            <input type="hidden" name="country" id="country-input" value="">
 
-            <!-- Step 2: Brokerage (shown after country) -->
+            <!-- Brokerage (appears after country) -->
             <div id="brokerage-section" style="display: none;">
-                <div class="form-group">
-                    <label>Select your brokerage</label>
-                    <div class="brokerage-grid" id="brokerage-grid">
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; margin-bottom: 8px;">Your brokerage</label>
+                    <div class="brokerage-grid" id="brokerage-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
                         {% for key, preset in brokerages.items() %}
                         <div class="brokerage-option brokerage-item" data-brokerage="{{ key }}"
                              data-brokerage-country="{{ preset.country }}"
                              data-currency="{{ preset.currency }}"
-                             data-types='{{ preset.account_types | tojson }}'>
-                            <div class="name">{{ preset.name }}</div>
-                            <div class="country">{{ preset.country }}</div>
+                             data-types='{{ preset.account_types | tojson }}'
+                             style="padding: 14px 10px;">
+                            <div class="name" style="font-size: 13px; margin: 0;">{{ preset.name }}</div>
                         </div>
                         {% endfor %}
                         <div class="brokerage-option brokerage-item" data-brokerage="generic"
                              data-brokerage-country="ALL"
                              data-currency="USD"
-                             data-types='["Individual", "Joint", "IRA", "401k", "TFSA", "RRSP", "Other"]'>
-                            <div class="name">Other</div>
-                            <div class="country">Any CSV</div>
+                             data-types='["Individual", "Joint", "IRA", "401k", "TFSA", "RRSP", "Other"]'
+                             style="padding: 14px 10px;">
+                            <div class="name" style="font-size: 13px; margin: 0;">Other CSV</div>
                         </div>
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label for="account-name">Give this account a name</label>
-                    <input type="text" name="account_name" id="account-name"
-                           placeholder="e.g. My Trading Account" required>
-                </div>
+                <!-- Account name (appears after brokerage) -->
+                <div id="name-section" style="display: none;">
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label style="font-size: 13px;">Account name</label>
+                        <input type="text" name="account_name" id="account-name"
+                               placeholder="e.g. My Trading Account" required
+                               style="padding: 12px 14px;">
+                    </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
-                    Continue
-                </button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
+                        Continue to Import
+                    </button>
+                </div>
             </div>
         </form>
 
@@ -83,46 +89,41 @@
         function selectCountry(code) {
             selectedCountry = code;
             document.getElementById('country-input').value = code;
-
-            // Highlight selected country
             document.querySelectorAll('[data-country]').forEach(el => el.classList.remove('selected'));
-            document.querySelector(`[data-country="${code}"]`).classList.add('selected');
-
-            // Show brokerage section
+            document.querySelector('[data-country="' + code + '"]').classList.add('selected');
             document.getElementById('brokerage-section').style.display = 'block';
 
-            // Filter brokerages by country
-            const countryMap = {'CA': 'CA', 'US': 'US'};
+            // Filter brokerages
             document.querySelectorAll('.brokerage-item').forEach(el => {
                 const bc = el.dataset.brokerageCountry;
-                el.style.display = (bc === countryMap[code] || bc === 'ALL') ? '' : 'none';
+                el.style.display = (bc === code || bc === 'ALL') ? '' : 'none';
+                el.classList.remove('selected');
             });
-
-            // Set default currency
-            const currencyMap = {'CA': 'CAD', 'US': 'USD'};
-            // Pre-fill name based on first visible brokerage
+            document.getElementById('name-section').style.display = 'none';
+            document.getElementById('brokerage-input').value = '';
         }
 
-        // Brokerage selection
         document.querySelectorAll('.brokerage-item').forEach(el => {
             el.addEventListener('click', () => {
                 document.querySelectorAll('.brokerage-item').forEach(o => o.classList.remove('selected'));
                 el.classList.add('selected');
                 document.getElementById('brokerage-input').value = el.dataset.brokerage;
+
                 const nameInput = document.getElementById('account-name');
-                if (!nameInput.value) {
-                    const name = el.querySelector('.name').textContent;
-                    nameInput.value = name === 'Other' ? 'My Account' : name;
-                }
+                const name = el.querySelector('.name').textContent.trim();
+                nameInput.value = name === 'Other CSV' ? 'My Account' : name;
+
                 const types = JSON.parse(el.dataset.types || '["Individual"]');
                 document.getElementById('account-type-input').value = types[0];
+
+                document.getElementById('name-section').style.display = 'block';
+                nameInput.focus();
             });
         });
         </script>
 
         {% endif %}
     </div>
-    <script src="/static/js/app.js"></script>
 </body>
 </html>
 
@@ -132,41 +133,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance OS — Import Data</title>
+    <title>Finance OS — Import</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 <body style="justify-content: center;">
-    <div class="onboarding-container">
+    <div class="onboarding-container" style="max-width: 560px;">
         <div class="onboarding-step">
-            <h1>Upload your data</h1>
-            <p>Export your transaction history as CSV from {{ brokerage_name }} and upload it here.</p>
+            <h1 style="font-size: 24px;">Import your data</h1>
+            <p style="font-size: 14px;">
+                Export your transaction history as CSV from {{ brokerage_name }} and drop it below.
+                <br><span style="color: var(--text-muted);">We'll parse it, calculate cost basis, and build your portfolio.</span>
+            </p>
         </div>
 
         <form method="POST" action="/import/preview" enctype="multipart/form-data">
             <input type="hidden" name="account_id" value="{{ account_id }}">
             <input type="hidden" name="brokerage" value="{{ brokerage }}">
 
-            <div class="upload-area" id="upload-area">
-                <div class="upload-icon">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                </div>
-                <p><strong>Drop your CSV here</strong> or click to browse</p>
-                <p id="file-name" style="margin-top: 8px; font-size: 13px;">No file selected</p>
+            <div class="upload-area" id="upload-area" style="padding: 48px 20px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.4; margin-bottom: 12px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p style="font-weight: 600; margin-bottom: 4px;">Drop your CSV here</p>
+                <p style="color: var(--text-muted); font-size: 13px;" id="file-name">or click to browse</p>
                 <input type="file" name="file" id="file-input" accept=".csv" required>
             </div>
 
-            {% if sample_hint %}
-            <div class="notice notice-info" style="margin-bottom: 16px;">
-                Testing? Try a sample file from <code>samples/{{ brokerage }}/</code>
-            </div>
-            {% endif %}
-
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 16px; padding: 14px;">
                 Preview Import
             </button>
         </form>
@@ -181,15 +177,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance OS — Review Import</title>
+    <title>Finance OS — Review</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 <body style="justify-content: center;">
     <div class="onboarding-container" style="max-width: 900px;">
         <div class="onboarding-step">
-            <h1>Review your data</h1>
-            <p>We found <strong>{{ total_count }}</strong> transactions. Here's a preview:</p>
+            <h1 style="font-size: 24px;">Review your data</h1>
+            <p>Found <strong>{{ total_count }}</strong> transactions. Here's a preview:</p>
         </div>
 
         <div class="card preview-table">
@@ -219,7 +215,7 @@
             </table>
             {% if total_count > 20 %}
             <p style="text-align: center; padding: 12px; color: var(--text-muted); font-size: 13px;">
-                Showing 20 of {{ total_count }} transactions
+                Showing 20 of {{ total_count }}
             </p>
             {% endif %}
         </div>
@@ -229,7 +225,7 @@
             <input type="hidden" name="brokerage" value="{{ brokerage }}">
             <input type="hidden" name="filename" value="{{ filename }}">
             <input type="hidden" name="import_batch" value="{{ import_batch }}">
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
                 Import {{ total_count }} Transactions
             </button>
         </form>
@@ -243,28 +239,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance OS — Ready!</title>
+    <title>Finance OS — Ready</title>
     <link rel="stylesheet" href="/static/css/style.css">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
 </head>
 <body style="justify-content: center;">
-    <div class="onboarding-container">
+    <div class="onboarding-container" style="max-width: 480px;">
         <div class="success-state">
             <div class="check">&#10003;</div>
-            <h1>You're all set!</h1>
-            <p style="color: var(--text-secondary); margin-bottom: 8px;">
+            <h1 style="font-size: 24px;">You're all set</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 6px;">
                 Imported <strong>{{ rows_imported }}</strong> transactions from {{ filename }}.
             </p>
             <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 32px;">
-                All data is stored locally on your machine. Nothing was sent anywhere.
+                Everything stored locally. Nothing sent anywhere.
             </p>
             <div style="display: flex; gap: 12px; justify-content: center;">
-                <a href="/" class="btn btn-primary">
-                    Go to Dashboard
-                </a>
-                <a href="/xray" class="btn btn-secondary">
-                    Run Portfolio X-Ray
-                </a>
+                <a href="/" class="btn btn-primary" style="padding: 12px 28px;">Go to Dashboard</a>
+                <a href="/xray" class="btn btn-secondary" style="padding: 12px 28px;">Portfolio X-Ray</a>
             </div>
         </div>
     </div>
