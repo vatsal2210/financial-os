@@ -1,0 +1,33 @@
+name: Auto Tag on Version Bump
+
+on:
+  push:
+    branches: [main]
+    paths: [version.py]
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version and create tag
+        run: |
+          VERSION=$(python3 -c "exec(open('version.py').read()); print(VERSION)")
+          TAG="v${VERSION}"
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists — skipping"
+          else
+            echo "Creating tag ${TAG}"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "${TAG}" -m "Release ${TAG}"
+            git push origin "${TAG}"
+            echo "Tag ${TAG} pushed — Build & Release workflow will trigger"
+          fi

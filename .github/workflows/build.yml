@@ -98,15 +98,3 @@ jobs:
             |----------|------|
             | **macOS** | `Finance-OS-mac.dmg` — Open, drag to Applications |
             | **Windows** | `Finance-OS-windows.zip` — Unzip, run `FinanceOS.exe` |
-
-            ### What's Included
-
-            - Portfolio dashboard with live prices
-            - CSV import (Robinhood, Fidelity, Schwab, Wealthsimple, IBKR, generic)
-            - Holdings, transactions, watchlist, feed
-            - Finances (income/expenses/cashflow)
-            - Tax (Canada + USA with optimization checklists)
-            - Trading rules with compliance scoring
-            - Portfolio X-Ray health grades
-            - AI chat (bring your own Claude or OpenAI key)
-            - 100% local — no cloud, no accounts, no telemetry
