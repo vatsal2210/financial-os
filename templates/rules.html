@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Trading Rules{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Trading Rules</h1>
+    <p>Set your trading discipline. The system checks compliance automatically.</p>
+</div>
+
+<!-- Compliance Score -->
+<div class="stats-grid">
+    <div class="stat-card" style="text-align: center; border-color: {% if score >= 80 %}var(--green){% elif score >= 50 %}var(--yellow){% else %}var(--red){% endif %};">
+        <div class="stat-label">Compliance Score</div>
+        <div class="stat-value" style="font-size: 48px; color: {% if score >= 80 %}var(--green){% elif score >= 50 %}var(--yellow){% else %}var(--red){% endif %};">
+            {{ score }}%
+        </div>
+        <div class="stat-sub neutral">{{ violation_count }} violation{{ "s" if violation_count != 1 }} found</div>
+    </div>
+</div>
+
+<!-- Violations -->
+{% if violations %}
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Violations</span>
+        <span style="font-size: 12px; color: var(--red);">{{ violations | length }} issue{{ "s" if violations | length != 1 }}</span>
+    </div>
+    {% for v in violations %}
+    <div style="padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 14px; align-items: flex-start;">
+        <div style="width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+                    background: {% if v.severity == 'high' %}var(--red){% elif v.severity == 'medium' %}var(--yellow){% else %}var(--blue){% endif %};"></div>
+        <div>
+            <div style="font-weight: 600; font-size: 14px; margin-bottom: 2px;">{{ v.rule }}</div>
+            <div style="color: var(--text-secondary); font-size: 13px;">{{ v.detail }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Compliance Status -->
+{% if compliance %}
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Status</span>
+    </div>
+    {% for c in compliance %}
+    <div style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 500; font-size: 13px;">{{ c.rule }}</span>
+            <span class="mono" style="font-size: 12px; color: var(--green);">{{ c.detail }}</span>
+        </div>
+        <div class="alloc-bar-wrap" style="height: 6px;">
+            <div class="alloc-bar" style="width: {{ c.pct }}%; background: {% if c.pct > 80 %}var(--yellow){% else %}var(--green){% endif %};"></div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Rules Configuration -->
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Your Rules</span>
+        <form method="POST" action="/rules/reset" style="margin: 0;"
+              onsubmit="return confirm('Reset all rules to defaults?')">
+            <button type="submit" class="btn btn-secondary btn-sm">Reset Defaults</button>
+        </form>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Rule</th>
+                <th>Value</th>
+                <th>Enabled</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rules %}
+            <tr>
+                <td>
+                    <div style="font-weight: 500;">{{ r.name }}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">{{ r.rule_type }}</div>
+                </td>
+                <td>
+                    <form method="POST" action="/rules/update" style="display: flex; gap: 6px; margin: 0;">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <input type="number" name="value" value="{{ r.value }}" step="any"
+                               style="width: 80px; padding: 4px 8px; font-size: 13px;">
+                        <button type="submit" class="btn btn-secondary btn-sm" style="padding: 4px 8px;">Save</button>
+                    </form>
+                </td>
+                <td>
+                    <form method="POST" action="/rules/toggle" style="margin: 0;">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 18px;">
+                            {% if r.enabled %}
+                            <span style="color: var(--green);">&#9679;</span>
+                            {% else %}
+                            <span style="color: var(--text-muted);">&#9675;</span>
+                            {% endif %}
+                        </button>
+                    </form>
+                </td>
+                <td>
+                    <form method="POST" action="/rules/remove" style="margin: 0;"
+                          onsubmit="return confirm('Remove this rule?')">
+                        <input type="hidden" name="id" value="{{ r.id }}">
+                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 2px 8px;">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Add Custom Rule -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Add Custom Rule</span>
+    </div>
+    <form method="POST" action="/rules/add">
+        <div class="grid-3" style="padding: 0;">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" placeholder="e.g. Max Tech Exposure" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select name="rule_type">
+                    <option value="max_positions">Max Positions</option>
+                    <option value="max_monthly_trades">Max Monthly Trades</option>
+                    <option value="stop_loss_pct">Stop-Loss %</option>
+                    <option value="min_position">Min Position Size ($)</option>
+                    <option value="cooling_period">Cooling Period (hours)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Value</label>
+                <input type="number" name="value" step="any" placeholder="e.g. 10" required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm">Add Rule</button>
+    </form>
+</div>
+{% endblock %}

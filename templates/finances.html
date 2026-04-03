@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Finances{% endblock %}
+
+{% block head %}
+<style>
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 22px;
+        cursor: pointer;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+        position: absolute;
+        inset: 0;
+        background: var(--border);
+        border-radius: 22px;
+        transition: background 0.2s;
+    }
+    .toggle-slider::before {
+        content: "";
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        left: 3px;
+        bottom: 3px;
+        background: var(--text-secondary);
+        border-radius: 50%;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider {
+        background: var(--green);
+    }
+    .toggle-switch input:checked + .toggle-slider::before {
+        transform: translateX(18px);
+        background: white;
+    }
+    .add-form {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+        padding: 16px;
+        border-top: 1px solid var(--border);
+    }
+    .add-form .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .add-form label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .month-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .month-nav a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 1.2rem;
+        padding: 4px 8px;
+        border-radius: var(--radius);
+        transition: background 0.15s;
+    }
+    .month-nav a:hover {
+        background: var(--accent-subtle);
+        color: var(--text-primary);
+    }
+    .month-nav .current-month {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--text-primary);
+        min-width: 160px;
+        text-align: center;
+    }
+    .cat-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+    }
+    .cat-row + .cat-row {
+        border-top: 1px solid var(--border);
+    }
+    .cat-name {
+        width: 110px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        text-transform: capitalize;
+        flex-shrink: 0;
+    }
+    .cat-bar-wrap {
+        flex: 1;
+        height: 8px;
+        background: var(--bg-secondary);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .cat-bar {
+        height: 100%;
+        border-radius: 4px;
+        background: var(--green);
+        transition: width 0.3s;
+    }
+    .cat-bar.over {
+        background: var(--red);
+    }
+    .cat-amount {
+        width: 90px;
+        text-align: right;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+    }
+    .cat-limit {
+        width: 80px;
+        text-align: right;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+    .inactive-row {
+        opacity: 0.5;
+    }
+    .freq-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+    .import-form {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        border-top: 1px solid var(--border);
+    }
+    .import-form input[type="file"] {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+    .import-form input[type="file"]::file-selector-button {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-right: 8px;
+    }
+    .import-form input[type="file"]::file-selector-button:hover {
+        background: var(--bg-card-hover);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Finances</h1>
+    <div class="month-nav">
+        {% set prev_month = month - 1 if month > 1 else 12 %}
+        {% set prev_year = year if month > 1 else year - 1 %}
+        {% set next_month = month + 1 if month < 12 else 1 %}
+        {% set next_year = year if month < 12 else year + 1 %}
+        <a href="/finances/monthly/{{ prev_year }}/{{ prev_month }}">&larr;</a>
+        <span class="current-month">{{ month_name }}</span>
+        <a href="/finances/monthly/{{ next_year }}/{{ next_month }}">&rarr;</a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Monthly Income</div>
+        <div class="stat-value">${{ "{:,.2f}".format(total_income) }}</div>
+        <div class="stat-sub">{{ income_sources|selectattr("active")|list|length }} active source{{ "s" if income_sources|selectattr("active")|list|length != 1 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Monthly Expenses</div>
+        <div class="stat-value">${{ "{:,.2f}".format(total_expenses) }}</div>
+        <div class="stat-sub">{{ expenses|length }} transaction{{ "s" if expenses|length != 1 }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Net Savings</div>
+        <div class="stat-value {% if net_savings >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "+" if net_savings >= 0 }}${{ "{:,.2f}".format(net_savings) }}
+        </div>
+        <div class="stat-sub">{{ "Surplus" if net_savings >= 0 else "Deficit" }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Savings Rate</div>
+        <div class="stat-value {% if savings_rate >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "{:.1f}".format(savings_rate) }}%
+        </div>
+        <div class="stat-sub">of gross income</div>
+    </div>
+</div>
+
+<!-- Two-column: Income + Category Breakdown -->
+<div class="grid-2 section">
+    <!-- Income Sources -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Income Sources</span>
+            <span class="card-title" style="font-weight: 400; font-size: 0.85rem; color: var(--text-secondary);">
+                {{ income_sources|length }} source{{ "s" if income_sources|length != 1 }}
+            </span>
+        </div>
+
+        {% if income_sources %}
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Amount</th>
+                        <th>Freq</th>
+                        <th>Monthly</th>
+                        <th>Active</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for src in income_sources %}
+                    <tr class="{% if not src.active %}inactive-row{% endif %}">
+                        <td>
+                            {{ src.name }}
+                            <span class="freq-badge">{{ src.category }}</span>
+                        </td>
+                        <td class="mono">${{ "{:,.2f}".format(src.amount) }}</td>
+                        <td><span class="freq-badge">{{ src.frequency }}</span></td>
+                        <td class="mono positive">${{ "{:,.2f}".format(src.monthly) }}</td>
+                        <td>
+                            <form method="POST" action="/income/toggle/{{ src.id }}" style="margin: 0;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" {% if src.active %}checked{% endif %}
+                                           onchange="this.form.submit()">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </form>
+                        </td>
+                        <td>
+                            <form method="POST" action="/income/remove" style="margin: 0;">
+                                <input type="hidden" name="id" value="{{ src.id }}">
+                                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 32px;">
+            <h3>No income sources</h3>
+            <p>Add your salary, freelance income, or other sources below.</p>
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/income/add" class="add-form">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" name="name" placeholder="Salary" required style="min-width: 140px;">
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" name="amount" placeholder="0.00" step="0.01" min="0.01" required style="width: 120px;">
+            </div>
+            <div class="form-group">
+                <label>Frequency</label>
+                <select name="frequency" style="width: 110px;">
+                    {% for f in frequencies %}
+                    <option value="{{ f }}">{{ f|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category" style="width: 110px;">
+                    {% for c in income_categories %}
+                    <option value="{{ c }}">{{ c|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Add Income</button>
+        </form>
+    </div>
+
+    <!-- Expense Breakdown by Category -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Spending by Category</span>
+            <span class="card-title" style="font-weight: 400; font-size: 0.85rem; color: var(--text-secondary);">
+                {{ month_name }}
+            </span>
+        </div>
+
+        {% if category_breakdown %}
+        <div style="padding: 16px;">
+            {% for cat in category_breakdown %}
+            <div class="cat-row">
+                <span class="cat-name">{{ cat.category }}</span>
+                <div class="cat-bar-wrap">
+                    <div class="cat-bar {% if cat.over %}over{% endif %}" style="width: {{ cat.pct if cat.limit > 0 else 100 }}%"></div>
+                </div>
+                <span class="cat-amount {% if cat.over %}negative{% endif %}">${{ "{:,.2f}".format(cat.spent) }}</span>
+                <span class="cat-limit">
+                    {% if cat.limit > 0 %}
+                    / ${{ "{:,.0f}".format(cat.limit) }}
+                    {% else %}
+                    --
+                    {% endif %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state" style="padding: 32px;">
+            <h3>No expenses this month</h3>
+            <p>Add expenses manually or import a bank statement below.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Recent Expenses -->
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Recent Expenses</span>
+        <span class="card-title" style="font-weight: 400; font-size: 0.85rem; color: var(--text-secondary);">
+            {{ expenses|length }} transaction{{ "s" if expenses|length != 1 }} &middot; ${{ "{:,.2f}".format(total_expenses) }}
+        </span>
+    </div>
+
+    {% if expenses %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in expenses %}
+                <tr>
+                    <td class="mono">{{ exp.date }}</td>
+                    <td>{{ exp.description or "--" }}</td>
+                    <td><span class="type-badge">{{ exp.category }}</span></td>
+                    <td class="mono negative">${{ "{:,.2f}".format(exp.amount) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state" style="padding: 32px;">
+        <h3>No expenses recorded</h3>
+        <p>Add expenses manually or import a CSV bank statement.</p>
+    </div>
+    {% endif %}
+
+    <!-- Add Expense Form -->
+    <form method="POST" action="/expenses/add" class="add-form">
+        <div class="form-group">
+            <label>Date</label>
+            <input type="date" name="date" required style="width: 140px;">
+        </div>
+        <div class="form-group">
+            <label>Description</label>
+            <input type="text" name="description" placeholder="Coffee, Groceries..." style="min-width: 180px;">
+        </div>
+        <div class="form-group">
+            <label>Amount</label>
+            <input type="number" name="amount" placeholder="0.00" step="0.01" min="0.01" required style="width: 110px;">
+        </div>
+        <div class="form-group">
+            <label>Category</label>
+            <select name="category" style="width: 120px;">
+                {% for c in categories %}
+                <option value="{{ c }}">{{ c|capitalize }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Add Expense</button>
+    </form>
+
+    <!-- Import CSV -->
+    <form method="POST" action="/expenses/import" enctype="multipart/form-data" class="import-form">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit" class="btn btn-secondary btn-sm">Import CSV</button>
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Supports Chase, Amex, and generic bank CSVs</span>
+    </form>
+</div>
+{% endblock %}

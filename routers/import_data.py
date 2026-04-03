@@ -30,9 +30,16 @@ async def onboarding_account(
     brokerage: str = Form(...),
     account_name: str = Form(...),
     account_type: str = Form(...),
+    country: str = Form(""),
 ):
     preset = BROKERAGE_PRESETS.get(brokerage, {})
     currency = preset.get("currency", "USD")
+
+    # Override currency based on country selection
+    if country == "CA":
+        currency = "CAD"
+    elif country == "US":
+        currency = "USD"
 
     conn = get_db()
     cursor = conn.execute(
@@ -40,6 +47,28 @@ async def onboarding_account(
         (account_name, brokerage, account_type, currency)
     )
     account_id = cursor.lastrowid
+
+    # Save country-based settings
+    if country:
+        # Set home currency
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES ('home_currency', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (currency,)
+        )
+        # Set tax profile country
+        conn.execute(
+            "INSERT INTO tax_profile (key, value) VALUES ('country', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (country.upper(),)
+        )
+        # Default province/state
+        if country == "CA":
+            conn.execute(
+                "INSERT INTO tax_profile (key, value) VALUES ('province', 'ON') "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+            )
+
     conn.commit()
     conn.close()
 

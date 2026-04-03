@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Finance OS — Tax{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Tax</h1>
+    <p>{% if configured %}{{ "Canada" if country == "CA" else "United States" }} tax optimization and tracking.{% else %}Set up your tax profile to get started.{% endif %}</p>
+</div>
+
+<!-- Tax Profile Setup -->
+<div class="card section" {% if configured %}style="border: none; background: transparent; padding: 0;"{% endif %}>
+    {% if not configured %}
+    <div class="card-header">
+        <span class="card-title">Tax Profile</span>
+    </div>
+    {% endif %}
+    <form method="POST" action="/tax/profile" id="tax-form">
+        <div {% if configured %}style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;"{% endif %}>
+            <div class="form-group" {% if configured %}style="margin-bottom: 0; min-width: 120px;"{% endif %}>
+                {% if not configured %}<label>Country</label>{% endif %}
+                <select name="country" id="tax-country" onchange="toggleTaxFields()">
+                    <option value="">Select country</option>
+                    <option value="CA" {% if country == 'CA' %}selected{% endif %}>Canada</option>
+                    <option value="US" {% if country == 'US' %}selected{% endif %}>United States</option>
+                </select>
+            </div>
+
+            <!-- Canada fields -->
+            <div id="ca-fields" style="display: {% if country == 'CA' %}flex{% else %}none{% endif %}; gap: 12px; {% if configured %}align-items: end;{% endif %} flex-wrap: wrap;">
+                <div class="form-group" {% if configured %}style="margin-bottom: 0; min-width: 140px;"{% endif %}>
+                    {% if not configured %}<label>Province</label>{% endif %}
+                    <select name="province">
+                        {% for code, name in ca_provinces.items() %}
+                        <option value="{{ code }}" {% if profile.get('province') == code %}selected{% endif %}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <!-- US fields -->
+            <div id="us-fields" style="display: {% if country == 'US' %}flex{% else %}none{% endif %}; gap: 12px; {% if configured %}align-items: end;{% endif %} flex-wrap: wrap;">
+                <div class="form-group" {% if configured %}style="margin-bottom: 0; min-width: 160px;"{% endif %}>
+                    {% if not configured %}<label>Filing Status</label>{% endif %}
+                    <select name="filing_status">
+                        <option value="single" {% if profile.get('filing_status') == 'single' %}selected{% endif %}>Single</option>
+                        <option value="married_filing_jointly" {% if profile.get('filing_status') == 'married_filing_jointly' %}selected{% endif %}>Married Filing Jointly</option>
+                    </select>
+                </div>
+                <div class="form-group" {% if configured %}style="margin-bottom: 0; min-width: 120px;"{% endif %}>
+                    {% if not configured %}<label>State Tax Rate %</label>{% endif %}
+                    <input type="number" name="state_tax_rate" step="0.01" placeholder="State tax %"
+                           value="{{ profile.get('state_tax_rate', '') }}" style="{% if configured %}padding: 8px 12px;{% endif %}">
+                </div>
+            </div>
+
+            <div class="form-group" {% if configured %}style="margin-bottom: 0; min-width: 140px;"{% endif %}>
+                {% if not configured %}<label>Annual Income</label>{% endif %}
+                <input type="number" name="annual_income" step="100" placeholder="Annual income"
+                       value="{{ profile.get('annual_income', '') }}" style="{% if configured %}padding: 8px 12px;{% endif %}">
+            </div>
+            <button type="submit" class="btn {% if configured %}btn-secondary btn-sm{% else %}btn-primary{% endif %}" style="{% if configured %}margin-bottom: 2px;{% endif %}">
+                {% if configured %}Update{% else %}Save Profile{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+{% if configured %}
+<!-- Tax Summary Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-label">Estimated Tax</div>
+        <div class="stat-value negative">${{ "{:,.0f}".format(tax_info.total) }}</div>
+        <div class="stat-sub neutral">{{ "Federal + Provincial" if country == "CA" else "Federal + State" }}</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Marginal Rate</div>
+        <div class="stat-value">{{ tax_info.marginal_combined }}%</div>
+        <div class="stat-sub neutral">
+            {{ tax_info.marginal_federal }}% fed + {{ tax_info.get('marginal_provincial', tax_info.get('marginal_state', 0)) }}% {{ "prov" if country == "CA" else "state" }}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Capital Gains</div>
+        <div class="stat-value {% if cap_gains.total_gain >= 0 %}positive{% else %}negative{% endif %}">
+            {{ "+" if cap_gains.total_gain >= 0 }}${{ "{:,.0f}".format(cap_gains.total_gain) }}
+        </div>
+        <div class="stat-sub neutral">
+            {% if country == "US" %}
+            Short: ${{ "{:,.0f}".format(cap_gains.total_short) }} | Long: ${{ "{:,.0f}".format(cap_gains.total_long) }}
+            {% else %}
+            Taxable (50%): ${{ "{:,.0f}".format(cap_gains.taxable_gain) }}
+            {% endif %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-label">Deductions</div>
+        <div class="stat-value positive">${{ "{:,.0f}".format(deductions_total) }}</div>
+        <div class="stat-sub neutral">{{ receipts | length }} receipt{{ "s" if receipts | length != 1 }}</div>
+    </div>
+</div>
+
+<div class="grid-2 section">
+    <!-- Optimization Checklist -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">{{ "Canada" if country == "CA" else "US" }} Tax Optimization</span>
+        </div>
+        {% for item in optimization %}
+        <div style="padding: 12px 16px; border-bottom: 1px solid var(--border);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; font-size: 13px; margin-bottom: 2px;">
+                        {% if item.checked %}<span style="color: var(--green);">&#10003;</span>{% else %}<span style="color: var(--text-muted);">&#9675;</span>{% endif %}
+                        {{ item.name }}
+                    </div>
+                    <div style="color: var(--text-secondary); font-size: 12px;">{{ item.description }}</div>
+                </div>
+                <div style="text-align: right; flex-shrink: 0; margin-left: 12px;">
+                    <div style="font-size: 12px; color: var(--text-muted);">{{ item.max_amount }}</div>
+                    <div style="font-size: 12px; color: var(--green);">{{ item.tax_savings }}</div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Capital Gains Detail -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">Realized Gains ({{ current_year }})</span>
+        </div>
+        {% if cap_gains.gains %}
+        <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Gain</th>
+                        {% if country == "US" %}<th>Term</th>{% endif %}
+                        <th>Held</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for g in cap_gains.gains %}
+                    <tr>
+                        <td><span class="symbol-badge">{{ g.symbol }}</span></td>
+                        <td class="mono {% if g.gain >= 0 %}positive{% else %}negative{% endif %}">
+                            {{ "+" if g.gain >= 0 }}${{ "{:,.2f}".format(g.gain) }}
+                        </td>
+                        {% if country == "US" %}
+                        <td><span class="type-badge {% if g.term == 'long' %}type-buy{% else %}type-sell{% endif %}">{{ g.term }}</span></td>
+                        {% endif %}
+                        <td class="mono" style="color: var(--text-muted);">{{ g.held_days }}d</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="padding: 30px; text-align: center; color: var(--text-muted);">No realized gains this year.</div>
+        {% endif %}
+
+        {% if cap_gains.wash_sales %}
+        <div style="padding: 12px 16px; border-top: 1px solid var(--border);">
+            <div style="font-weight: 600; font-size: 12px; color: var(--red); margin-bottom: 6px;">Wash Sale Warnings</div>
+            {% for w in cap_gains.wash_sales %}
+            <div style="font-size: 12px; color: var(--text-secondary); padding: 2px 0;">
+                {{ w.symbol }}: sold {{ w.sell_date }}, rebought {{ w.buy_date }} ({{ w.days_apart }}d apart)
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Receipts -->
+<div class="card section">
+    <div class="card-header">
+        <span class="card-title">Receipts ({{ current_year }})</span>
+        <span style="font-size: 12px; color: var(--text-muted);">Total: ${{ "{:,.2f}".format(deductions_total) }}</span>
+    </div>
+    {% if receipts %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in receipts %}
+                <tr>
+                    <td class="mono">{{ r.date }}</td>
+                    <td>{{ r.description }}</td>
+                    <td><span class="type-badge type-transfer">{{ r.category }}</span></td>
+                    <td class="mono">${{ "{:,.2f}".format(r.amount) }}</td>
+                    <td>
+                        <form method="POST" action="/tax/receipt/remove" style="margin: 0;"
+                              onsubmit="return confirm('Remove this receipt?')">
+                            <input type="hidden" name="id" value="{{ r.id }}">
+                            <button type="submit" class="btn btn-danger btn-sm" style="padding: 2px 6px;">x</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- Add Receipt -->
+    <form method="POST" action="/tax/receipt/add" style="padding: 16px 0 0;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0; min-width: 130px;">
+                <label>Date</label>
+                <input type="date" name="date" required style="padding: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 180px;">
+                <label>Description</label>
+                <input type="text" name="description" placeholder="What was it for?" required style="padding: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0; min-width: 100px;">
+                <label>Amount</label>
+                <input type="number" name="amount" step="0.01" placeholder="0.00" required style="padding: 8px;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0; min-width: 140px;">
+                <label>Category</label>
+                <select name="category" style="padding: 8px;">
+                    {% for c in categories %}
+                    <option value="{{ c }}">{{ c | replace("_", " ") | title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="hidden" name="tax_year" value="{{ current_year }}">
+            <button type="submit" class="btn btn-secondary btn-sm">Add Receipt</button>
+        </div>
+    </form>
+</div>
+
+<!-- Tax Breakdown -->
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">Tax Breakdown</span>
+    </div>
+    <table>
+        <tbody>
+            <tr>
+                <td style="color: var(--text-secondary);">{{ "Federal Tax" }}</td>
+                <td class="mono" style="text-align: right;">${{ "{:,.2f}".format(tax_info.federal) }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">{{ "Provincial Tax" if country == "CA" else "State Tax" }}</td>
+                <td class="mono" style="text-align: right;">${{ "{:,.2f}".format(tax_info.get('provincial', tax_info.get('state', 0))) }}</td>
+            </tr>
+            {% if country == "US" %}
+            <tr>
+                <td style="color: var(--text-secondary);">Standard Deduction</td>
+                <td class="mono positive" style="text-align: right;">-${{ "{:,.2f}".format(tax_info.standard_deduction) }}</td>
+            </tr>
+            <tr>
+                <td style="color: var(--text-secondary);">Taxable Income</td>
+                <td class="mono" style="text-align: right;">${{ "{:,.2f}".format(tax_info.taxable_income) }}</td>
+            </tr>
+            {% endif %}
+            <tr style="border-top: 2px solid var(--border);">
+                <td style="font-weight: 600;">Total Estimated Tax</td>
+                <td class="mono negative" style="text-align: right; font-weight: 600;">${{ "{:,.2f}".format(tax_info.total) }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleTaxFields() {
+    const country = document.getElementById('tax-country').value;
+    document.getElementById('ca-fields').style.display = country === 'CA' ? 'flex' : 'none';
+    document.getElementById('us-fields').style.display = country === 'US' ? 'flex' : 'none';
+}
+</script>
+{% endblock %}

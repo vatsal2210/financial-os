@@ -139,11 +139,73 @@ def init_db():
             created_at TEXT DEFAULT (datetime('now'))
         );
 
+        -- Income sources (salary, freelance, dividends, etc.)
+        CREATE TABLE IF NOT EXISTS income (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            amount REAL NOT NULL,
+            frequency TEXT DEFAULT 'monthly',
+            category TEXT DEFAULT 'salary',
+            active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Expense transactions (bank/credit card imports or manual)
+        CREATE TABLE IF NOT EXISTS expenses (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            description TEXT,
+            amount REAL NOT NULL,
+            category TEXT DEFAULT 'other',
+            source TEXT,
+            import_batch TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Budget targets per category
+        CREATE TABLE IF NOT EXISTS budgets (
+            category TEXT PRIMARY KEY,
+            monthly_limit REAL NOT NULL,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Tax profile (country-specific settings)
+        CREATE TABLE IF NOT EXISTS tax_profile (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Tax receipts
+        CREATE TABLE IF NOT EXISTS receipts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            description TEXT NOT NULL,
+            amount REAL NOT NULL,
+            category TEXT NOT NULL,
+            tax_year INTEGER NOT NULL,
+            filename TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        -- Trading rules (user-configurable)
+        CREATE TABLE IF NOT EXISTS trading_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            rule_type TEXT NOT NULL,
+            value REAL NOT NULL,
+            enabled INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
         CREATE INDEX IF NOT EXISTS idx_transactions_symbol ON transactions(symbol);
         CREATE INDEX IF NOT EXISTS idx_feed_created ON feed(created_at);
         CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
         CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
         CREATE INDEX IF NOT EXISTS idx_transactions_type ON transactions(type);
+        CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+        CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
+        CREATE INDEX IF NOT EXISTS idx_receipts_year ON receipts(tax_year);
     """)
     conn.commit()
     conn.close()

@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from database import init_db, STATIC_DIR
 from contextlib import asynccontextmanager
-from routers import dashboard, import_data, settings, ai, watchlist, xray, feed
+from routers import dashboard, import_data, settings, ai, watchlist, xray, feed, finances, tax, rules
 
 
 @asynccontextmanager
@@ -50,6 +50,9 @@ app.include_router(ai.router)
 app.include_router(watchlist.router)
 app.include_router(xray.router)
 app.include_router(feed.router)
+app.include_router(finances.router)
+app.include_router(tax.router)
+app.include_router(rules.router)
 
 
 def main():
