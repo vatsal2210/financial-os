@@ -27,18 +27,18 @@ jobs:
           # Check commit message for explicit version directives
           COMMIT_MSG="${{ github.event.head_commit.message }}"
 
-          # Only match [major] or [minor] as standalone tags, not words in text
+          # Match [release:major] or [release:minor] — explicit, no false positives
           FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
 
-          if echo "$FIRST_LINE" | grep -qF "[major]"; then
+          if echo "$FIRST_LINE" | grep -qF "[release:major]"; then
             MAJOR=$(echo $CURRENT | cut -d. -f1)
             NEW="$((MAJOR + 1)).0.0"
-            echo "Major bump requested via [major] tag"
-          elif echo "$FIRST_LINE" | grep -qF "[minor]"; then
+            echo "Major bump via [release:major]"
+          elif echo "$FIRST_LINE" | grep -qF "[release:minor]"; then
             MAJOR=$(echo $CURRENT | cut -d. -f1)
             MINOR=$(echo $CURRENT | cut -d. -f2)
             NEW="${MAJOR}.$((MINOR + 1)).0"
-            echo "Minor bump requested via [minor] tag"
+            echo "Minor bump via [release:minor]"
           else
             # Default: patch bump: 0.2.3 → 0.2.4
             MAJOR=$(echo $CURRENT | cut -d. -f1)
