@@ -518,24 +518,29 @@ async def tax_page(request: Request):
         # Optimization checklist
         optimization = _get_optimization_checklist(country, income, profile)
 
-        # Receipts
+        # Receipts — show current tax year, or most recent year with data
         conn = get_db()
+        years_rows = conn.execute(
+            "SELECT DISTINCT tax_year FROM receipts ORDER BY tax_year DESC"
+        ).fetchall()
+        available_years = [r["tax_year"] for r in years_rows]
+
+        # Default to current year, but if no receipts there, show most recent
+        display_year = current_year
+        if available_years and current_year not in available_years:
+            display_year = available_years[0]
+        if current_year not in available_years:
+            available_years.insert(0, current_year)
+
         receipts = conn.execute(
             "SELECT * FROM receipts WHERE tax_year = ? ORDER BY date DESC",
-            (current_year,)
+            (display_year,)
         ).fetchall()
         conn.close()
         deductions_total = sum(r["amount"] for r in receipts)
-
-    # Available years for receipts
-    conn = get_db()
-    years_rows = conn.execute(
-        "SELECT DISTINCT tax_year FROM receipts ORDER BY tax_year DESC"
-    ).fetchall()
-    conn.close()
-    available_years = [r["tax_year"] for r in years_rows]
-    if current_year not in available_years:
-        available_years.insert(0, current_year)
+    else:
+        available_years = [current_year]
+        display_year = current_year
 
     categories = CA_RECEIPT_CATEGORIES if country == "CA" else US_RECEIPT_CATEGORIES
 
@@ -549,7 +554,7 @@ async def tax_page(request: Request):
         cap_gains=cap_gains,
         receipts=receipts,
         deductions_total=deductions_total,
-        current_year=current_year,
+        current_year=display_year,
         available_years=available_years,
         categories=categories,
         ca_provinces=CA_PROVINCES,
