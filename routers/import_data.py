@@ -2,19 +2,13 @@
 import uuid
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, set_setting, is_onboarded, UPLOADS_DIR
 from services.csv_parser import (
     BROKERAGE_PRESETS, parse_csv, get_preview, detect_brokerage
 )
+from routers.shared import render as _render
 
 router = APIRouter()
-from database import TEMPLATES_DIR
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 @router.get("/onboarding", response_class=HTMLResponse)

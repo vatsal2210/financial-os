@@ -2,12 +2,10 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, TEMPLATES_DIR
+from routers.shared import render as _render
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
 # Default rules (user can customize)
 DEFAULT_RULES = [
     {"name": "Max Positions", "rule_type": "max_positions", "value": 20,
@@ -22,9 +20,6 @@ DEFAULT_RULES = [
      "desc": "Wait this long after adding to watchlist before buying"},
 ]
 
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 def _ensure_default_rules():

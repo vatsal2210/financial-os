@@ -2,15 +2,10 @@
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, TEMPLATES_DIR
+from routers.shared import render as _render
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 # ---------------------------------------------------------------------------

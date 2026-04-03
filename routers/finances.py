@@ -5,12 +5,10 @@ import uuid
 from datetime import datetime, date
 from fastapi import APIRouter, Request, Form, UploadFile, File, Query
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, TEMPLATES_DIR
+from routers.shared import render as _render
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
 EXPENSE_CATEGORIES = [
     "housing", "groceries", "transport", "dining", "subscriptions",
     "insurance", "utilities", "health", "shopping", "other",
@@ -22,9 +20,6 @@ INCOME_CATEGORIES = [
 
 INCOME_FREQUENCIES = ["monthly", "biweekly", "annual"]
 
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 def _to_monthly(amount: float, frequency: str) -> float:

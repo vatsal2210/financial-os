@@ -31,6 +31,9 @@ from contextlib import asynccontextmanager
 from routers import dashboard, import_data, settings, ai, watchlist, xray, feed, finances, tax, rules
 
 
+from services.updater import check_for_update
+
+
 @asynccontextmanager
 async def lifespan(app):
     init_db()
@@ -41,6 +44,7 @@ app = FastAPI(title="Finance OS", docs_url=None, redoc_url=None, lifespan=lifesp
 
 # Static files
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
 
 # Routers
 app.include_router(dashboard.router)

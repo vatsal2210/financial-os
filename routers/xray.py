@@ -1,17 +1,11 @@
 """Portfolio X-Ray — instant one-click analysis of portfolio health."""
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, is_onboarded
 from services.portfolio import calculate_holdings, get_portfolio_summary, get_allocation
+from routers.shared import render as _render
 
 router = APIRouter()
-from database import TEMPLATES_DIR
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 @router.get("/xray", response_class=HTMLResponse)

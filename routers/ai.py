@@ -1,16 +1,11 @@
 """AI query routes — natural language questions about portfolio."""
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, TEMPLATES_DIR
 from services.ai_client import query_portfolio, get_ai_provider
+from routers.shared import render as _render
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 @router.get("/ask", response_class=HTMLResponse)

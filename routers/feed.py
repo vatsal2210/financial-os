@@ -3,16 +3,11 @@ import json
 from datetime import datetime
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
 from database import get_db, get_setting, TEMPLATES_DIR
 from services.market import get_prices_batch
+from routers.shared import render as _render
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-
-def _render(request, template, **ctx):
-    return templates.TemplateResponse(request=request, name=template, context=ctx)
 
 
 @router.get("/feed", response_class=HTMLResponse)

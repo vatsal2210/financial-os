@@ -122,6 +122,28 @@ body {
     letter-spacing: 0.5px;
 }
 
+.update-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    border-radius: 20px;
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.update-badge:hover {
+    background: rgba(96, 165, 250, 0.18);
+    border-color: var(--blue);
+}
+
 /* Main content */
 .content {
     margin-left: var(--sidebar-width);
