@@ -1,8 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""PyInstaller spec for Finance OS — self-contained macOS .app"""
-
-import sys
-from pathlib import Path
+"""PyInstaller spec for Finance OS — Windows .exe"""
 
 block_cipher = None
 
@@ -16,7 +13,6 @@ a = Analysis(
         ('samples', 'samples'),
     ],
     hiddenimports=[
-        # Uvicorn
         'uvicorn.logging',
         'uvicorn.loops',
         'uvicorn.loops.auto',
@@ -27,7 +23,6 @@ a = Analysis(
         'uvicorn.protocols.websockets.auto',
         'uvicorn.lifespan',
         'uvicorn.lifespan.on',
-        # App routers
         'routers.dashboard',
         'routers.import_data',
         'routers.settings',
@@ -38,22 +33,13 @@ a = Analysis(
         'routers.finances',
         'routers.tax',
         'routers.rules',
-        # App services
         'services.csv_parser',
         'services.market',
         'services.portfolio',
         'services.ai_client',
-        # Dependencies
         'multipart',
         'aiofiles',
-        # pywebview native window
         'webview',
-        'webview.platforms',
-        'webview.platforms.cocoa',
-        # macOS dock icon
-        'AppKit',
-        'Foundation',
-        'objc',
     ],
     hookspath=[],
     hooksconfig={},
@@ -85,11 +71,10 @@ exe = EXE(
     upx=True,
     console=False,
     disable_windowed_traceback=False,
-    argv_emulation=True,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='static/icon.icns',
+    icon='static/icon_1024.png',
 )
 
 coll = COLLECT(
@@ -102,20 +87,3 @@ coll = COLLECT(
     upx_exclude=[],
     name='FinanceOS',
 )
-
-if sys.platform == 'darwin':
-    app = BUNDLE(
-        coll,
-        name='Finance OS.app',
-        icon='static/icon.icns',
-        bundle_identifier='com.financeos.app',
-        info_plist={
-            'CFBundleName': 'Finance OS',
-            'CFBundleDisplayName': 'Finance OS',
-            'CFBundleVersion': '0.1.0',
-            'CFBundleShortVersionString': '0.1.0',
-            'CFBundleIconFile': 'icon.icns',
-            'NSHighResolutionCapable': True,
-            'LSMinimumSystemVersion': '10.15',
-        },
-    )

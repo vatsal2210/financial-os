@@ -1,0 +1,112 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller pywebview
+
+      - name: Build macOS app
+        run: python -m PyInstaller financeos.spec --noconfirm
+
+      - name: Create DMG
+        run: |
+          hdiutil create -volname "Finance OS" \
+            -srcfolder "dist/Finance OS.app" \
+            -ov -format UDZO \
+            "dist/Finance-OS-mac.dmg"
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/Finance-OS-mac.dmg
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller pywebview
+
+      - name: Build Windows exe
+        run: python -m PyInstaller financeos-win.spec --noconfirm
+
+      - name: Create zip
+        run: Compress-Archive -Path "dist\FinanceOS\*" -DestinationPath "dist\Finance-OS-windows.zip"
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: dist/Finance-OS-windows.zip
+
+  release:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-dmg
+          path: artifacts/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-zip
+          path: artifacts/
+
+      - name: Create or update release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Finance-OS-mac.dmg
+            artifacts/Finance-OS-windows.zip
+          body: |
+            ## Finance OS ${{ github.ref_name }}
+
+            **Local-first personal finance intelligence. Your data never leaves your machine.**
+
+            ### Downloads
+
+            | Platform | File |
+            |----------|------|
+            | **macOS** | `Finance-OS-mac.dmg` — Open, drag to Applications |
+            | **Windows** | `Finance-OS-windows.zip` — Unzip, run `FinanceOS.exe` |
+
+            ### What's Included
+
+            - Portfolio dashboard with live prices
+            - CSV import (Robinhood, Fidelity, Schwab, Wealthsimple, IBKR, generic)
+            - Holdings, transactions, watchlist, feed
+            - Finances (income/expenses/cashflow)
+            - Tax (Canada + USA with optimization checklists)
+            - Trading rules with compliance scoring
+            - Portfolio X-Ray health grades
+            - AI chat (bring your own Claude or OpenAI key)
+            - 100% local — no cloud, no accounts, no telemetry
