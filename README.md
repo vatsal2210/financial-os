@@ -76,3 +76,4 @@ Pick your country during setup. The system adapts automatically.
 | Accounts | TFSA, RRSP, FHSA, RESP | 401k, IRA, Roth, HSA |
 | Capital gains | 50% inclusion rate | Short-term vs long-term |
 | Optimization | RRSP room, FHSA, CESG, T2200 | Standard deduction, wash sale alerts |
+# Auto-versioning test
