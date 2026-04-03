@@ -1,4 +1,4 @@
-name: Auto Version & Release
+name: Auto Version, Build & Release
 
 on:
   push:
@@ -8,78 +8,138 @@ permissions:
   contents: write
 
 jobs:
-  version-and-tag:
-    # Skip if the push was from this workflow (prevent infinite loop)
+  version:
     if: "!contains(github.event.head_commit.message, '[skip ci]') && github.actor != 'github-actions[bot]'"
     runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.bump.outputs.new_version }}
+      tag: ${{ steps.bump.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bump version and tag
+      - name: Bump version
+        id: bump
         run: |
-          # Read current version
           CURRENT=$(python3 -c "exec(open('version.py').read()); print(VERSION)")
-          echo "Current version: ${CURRENT}"
-
-          # Only check the commit TITLE (first line) for version directives
           FIRST_LINE=$(git log -1 --format=%s)
-          echo "Commit title: ${FIRST_LINE}"
+          echo "Current: ${CURRENT} | Commit: ${FIRST_LINE}"
 
           if echo "$FIRST_LINE" | grep -qF "[release:major]"; then
             MAJOR=$(echo $CURRENT | cut -d. -f1)
             NEW="$((MAJOR + 1)).0.0"
-            echo "Major bump via [release:major]"
           elif echo "$FIRST_LINE" | grep -qF "[release:minor]"; then
             MAJOR=$(echo $CURRENT | cut -d. -f1)
             MINOR=$(echo $CURRENT | cut -d. -f2)
             NEW="${MAJOR}.$((MINOR + 1)).0"
-            echo "Minor bump via [release:minor]"
           else
-            # Default: patch bump: 0.2.3 → 0.2.4
             MAJOR=$(echo $CURRENT | cut -d. -f1)
             MINOR=$(echo $CURRENT | cut -d. -f2)
             PATCH=$(echo $CURRENT | cut -d. -f3)
             NEW="${MAJOR}.${MINOR}.$((PATCH + 1))"
-            echo "Patch bump (default)"
           fi
 
           TAG="v${NEW}"
           TODAY=$(date +%Y.%m.%d)
+          echo "Bumping to ${NEW}"
 
-          echo "New version: ${NEW} (tag: ${TAG})"
-
-          # Check if tag already exists
           if git rev-parse "${TAG}" >/dev/null 2>&1; then
-            echo "Tag ${TAG} already exists — skipping"
+            echo "Tag ${TAG} exists — skipping"
+            echo "new_version=" >> $GITHUB_OUTPUT
+            echo "tag=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # Update version.py
-          cat > version.py << EOF
-          """Finance OS version info."""
-          VERSION = "${NEW}"
-          BUILD = "${TODAY}"
-          EOF
+          printf '"""Finance OS version info."""\nVERSION = "%s"\nBUILD = "%s"\n' "$NEW" "$TODAY" > version.py
 
-          # Fix indentation (heredoc adds spaces)
-          python3 -c "
-          lines = open('version.py').readlines()
-          with open('version.py', 'w') as f:
-              for line in lines:
-                  f.write(line.lstrip())
-          "
-
-          # Commit version bump
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add version.py
           git commit -m "Bump version to ${NEW} [skip ci]"
           git push origin main
-
-          # Create and push tag
           git tag "${TAG}" -m "Release ${TAG}"
           git push origin "${TAG}"
-          echo "Released ${TAG}"
+
+          echo "new_version=${NEW}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+
+  build-mac:
+    needs: version
+    if: needs.version.outputs.tag != ''
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install and build
+        run: |
+          pip install -r requirements.txt pyinstaller pywebview
+          python -m PyInstaller financeos.spec --noconfirm
+          hdiutil create -volname "Finance OS" -srcfolder "dist/Finance OS.app" -ov -format UDZO "dist/Finance-OS-mac.dmg"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-dmg
+          path: dist/Finance-OS-mac.dmg
+
+  build-windows:
+    needs: version
+    if: needs.version.outputs.tag != ''
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install and build
+        run: |
+          pip install -r requirements.txt pyinstaller pywebview Pillow
+          python -m PyInstaller financeos-win.spec --noconfirm
+          Compress-Archive -Path "dist\FinanceOS\*" -DestinationPath "dist\Finance-OS-windows.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: dist/Finance-OS-windows.zip
+
+  release:
+    needs: [version, build-mac, build-windows]
+    if: needs.version.outputs.tag != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-dmg
+          path: artifacts/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-zip
+          path: artifacts/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.tag }}
+          name: Finance OS ${{ needs.version.outputs.tag }}
+          files: |
+            artifacts/Finance-OS-mac.dmg
+            artifacts/Finance-OS-windows.zip
+          body: |
+            ## Finance OS ${{ needs.version.outputs.tag }}
+
+            | Platform | Download |
+            |----------|----------|
+            | **macOS** | `Finance-OS-mac.dmg` — Open, drag to Applications |
+            | **Windows** | `Finance-OS-windows.zip` — Unzip, run `FinanceOS.exe` |
