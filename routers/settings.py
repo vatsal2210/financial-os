@@ -27,6 +27,8 @@ async def settings_page(request: Request):
     from services.ai_client import get_ai_provider
     effective_ai = get_ai_provider()
 
+    from version import VERSION, BUILD
+
     return _render(request, "settings.html",
         tab="settings",
         ai_provider=get_setting("ai_provider", "") or effective_ai["provider"],
@@ -39,6 +41,8 @@ async def settings_page(request: Request):
         scan_holdings_news=get_setting("scan_holdings_news", "") == "1",
         accounts=accounts,
         imports=imports,
+        version=VERSION,
+        build=BUILD,
     )
 
 
