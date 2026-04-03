@@ -1,3 +1,3 @@
 """Finance OS version info."""
-VERSION = "1.0.0"
+VERSION = "0.2.3"
 BUILD = "2026.04.03"
